@@ -12,16 +12,28 @@ A toml file [`sample.toml`](sample.toml) is provided along with a sample C progr
 The only header that you need to include is `src/toml.h`.
 An example [Makefile](Makefile) is also provided.
 
+### Building
+
+```bash
+$ mkdir -p obj
+$ make
+$ ./main
+```
+
 ## Tests
 
 The test suite also includes the [official compliance tests](https://github.com/toml-lang/toml-test).
 
 ```bash
+$ mkdir -p obj
 $ ./tests/run_tests.sh          # this runs the ctoml tests
 $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 ```
 
 ### Current Status
+
+> [!NOTE]
+> This has only been tested on macOS Sonoma Version 14.2.1 with clang 12.0.5
 
 **ctoml**
 
