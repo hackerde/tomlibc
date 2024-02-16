@@ -1,0 +1,36 @@
+# comment
+number = 1234
+datetime = 1979-05-27T08:32:01
+
+[section]
+array = [
+    1, 2, 3,
+    7, 8, 9
+]
+multiline = """
+the quick brown fox
+jumped over the lazy dog
+"""
+
+[section.subsection]
+key.subkey = "value"
+
+[data]
+d1 = -509
+d2 = { type = "int" }
+d3 = [
+  "foo@example.com",
+  { email = "bar@example.com", url = 'https://example.com/bar' }
+]
+
+[data.constants]
+max = inf
+none = nan
+
+[[fruits]]
+name = "orange"
+color = 0xFFA500
+
+[[fruits]]
+name = "apple"
+color = 0xFF0000

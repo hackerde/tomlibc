@@ -1,0 +1,22 @@
+{
+    "ldt1": {
+        "type": "datetime-local",
+        "value": "1979-05-27T07:32:00"
+    },
+    "ldt2": {
+        "type": "datetime-local",
+        "value": "1979-05-27T00:32:00.999999"
+    },
+    "ld1": {
+        "type": "date-local",
+        "value": "1979-05-27"
+    },
+    "lt1": {
+        "type": "time-local",
+        "value": "07:32:00"
+    },
+    "lt2": {
+        "type": "time-local",
+        "value": "00:32:00.999999"
+    }
+}

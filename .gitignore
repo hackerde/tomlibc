@@ -1,0 +1,9 @@
+.vscode/
+*.toml
+*.json
+main
+obj/
+*.o
+tests/test
+tests/test.log
+tests/toml-test.log
