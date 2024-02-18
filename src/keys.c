@@ -339,7 +339,7 @@ key_t* parse_keyval(
     {
         key_t* subkey = parse_key( tok, key, true );
         FAIL_RETURN( subkey, "failed to parse key\n" )
-        value_t* v = parse_value( tok, " \n", 2 );
+        value_t* v = parse_value( tok, "# \n" );
         FAIL_RETURN( v, "failed to parse value\n" )
         if( v->type==INLINETABLE )
         {

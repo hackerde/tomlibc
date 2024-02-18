@@ -166,13 +166,20 @@ char* parse_literalstring( tokenizer_t* tok, char* value )
     return NULL;
 }
 
-datetime_t* parse_datetime( tokenizer_t* tok, char* value )
+datetime_t* parse_datetime(
+    tokenizer_t*    tok,
+    char*           value,
+    const char*     num_end
+)
 {
     datetime_t* dt = NULL;
     size_t idx = 0;
+    int spaces = 0;
     char* datetimes[] = {
+        "%Y-%m-%dT%H:%M:%SZ",
         "%Y-%m-%dT%H:%M:%S%Z",
         "%Y-%m-%dT%H:%M:%S%z",
+        "%Y-%m-%d %H:%M:%SZ",
         "%Y-%m-%d %H:%M:%S%Z",
         "%Y-%m-%d %H:%M:%S%z"
     };
@@ -185,7 +192,8 @@ datetime_t* parse_datetime( tokenizer_t* tok, char* value )
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
-        if( is_newline( get_token( tok ) ) )
+        if( ( is_whitespace( get_token( tok ) ) && spaces ) ||
+            ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) ) )
         {
             struct tm* time = calloc( 1, sizeof( struct tm ) );
             PARSE_DT_FORMAT( datetimes, DATETIME )
@@ -195,7 +203,11 @@ datetime_t* parse_datetime( tokenizer_t* tok, char* value )
             LOG_ERR_BREAK( "could not parse %s as datetime\n", value )
         }
         else
+        {
+            if( is_whitespace( get_token( tok ) ) )
+                spaces++;
             value[ idx++ ] = get_token( tok );
+        }
         next_token( tok );
     }
     return NULL;
@@ -258,7 +270,7 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
         else
         {
             FAIL_BREAK( sep, "expected , between elements\n" )
-            value_t* v = parse_value( tok, ",] \n", 4 );
+            value_t* v = parse_value( tok, "#,] \n" );
             FAIL_BREAK( v, "could not parse value\n" )
             arr->arr[ idx++ ] = v;
             sep = false;
@@ -322,7 +334,7 @@ key_t* parse_inlinetable( tokenizer_t* tok )
             FAIL_BREAK( sep, "expected , between elements\n" )
             key_t* k = parse_key( tok, keys, true );
             FAIL_BREAK( k, "failed to parse key\n" )
-            value_t* v = parse_value( tok, ", }", 3 );
+            value_t* v = parse_value( tok, ", }" );
             FAIL_BREAK( v, "failed to parse value\n" )
             k->value = v;
             parse_whitespace( tok );
@@ -440,8 +452,7 @@ double parse_base_uint(
     tokenizer_t*    tok,
     int             base,
     char*           value,
-    const char*     num_end,
-    size_t          num_len
+    const char*     num_end
 )
 {
     size_t idx = 0;
@@ -449,7 +460,7 @@ double parse_base_uint(
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
-        if( is_numberend( get_token( tok ), num_end, num_len ) )
+        if( is_numberend( get_token( tok ), num_end ) )
         {
             char* end;
             unsigned long num = strtoul( value, &end, base );
@@ -479,8 +490,7 @@ number_t* parse_number(
     tokenizer_t*    tok,
     char*           value,
     double*         d,
-    const char*     num_end,
-    size_t          num_len
+    const char*     num_end
 )
 {
     size_t idx = 0;
@@ -491,7 +501,7 @@ number_t* parse_number(
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" )
-        if( is_numberend( get_token( tok ), num_end, num_len ) )
+        if( is_numberend( get_token( tok ), num_end ) )
         {
             char* end;
             double num = strtod( value, &end );
@@ -508,19 +518,19 @@ number_t* parse_number(
             {
                 // hexadecimal
                 next_token( tok );
-                b = parse_base_uint( tok, 16, value, num_end, num_len );
+                b = parse_base_uint( tok, 16, value, num_end );
             }
             else if( get_token( tok )=='o' )
             {
                 // octal
                 next_token( tok );
-                b = parse_base_uint( tok, 8, value, num_end, num_len );
+                b = parse_base_uint( tok, 8, value, num_end );
             }
             else if( get_token( tok )=='b' )
             {
                 // binary
                 next_token( tok );
-                b = parse_base_uint( tok, 2, value, num_end, num_len );
+                b = parse_base_uint( tok, 2, value, num_end );
             }
             else
             {
@@ -585,8 +595,7 @@ number_t* parse_number(
 
 value_t* parse_value(
     tokenizer_t*    tok,
-    const char*     num_end,
-    size_t          num_len
+    const char*     num_end
 )
 {
     while( has_token( tok ) )
@@ -624,7 +633,7 @@ value_t* parse_value(
             if( has_token( tok ) && get_token( tok )==':' )
             {
                 backtrack( tok, a+b );
-                datetime_t* dt = parse_datetime( tok, value );
+                datetime_t* dt = parse_datetime( tok, value, num_end );
                 FAIL_BREAK( dt, "could not parse time\n" )
                 value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                 return v;
@@ -636,7 +645,7 @@ value_t* parse_value(
                 if( has_token( tok ) && get_token( tok )=='-' )
                 {
                     backtrack( tok, a+b+c+d );
-                    datetime_t* dt = parse_datetime( tok, value );
+                    datetime_t* dt = parse_datetime( tok, value, num_end );
                     FAIL_BREAK( dt, "could not parse datetime\n" )
                     value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                     return v;
@@ -645,7 +654,7 @@ value_t* parse_value(
                     backtrack( tok, a+b+c+d );
             }
             double* d = calloc( 1, sizeof( double ) );
-            number_t* n = parse_number( tok, value, d, num_end, num_len );
+            number_t* n = parse_number( tok, value, d, num_end );
             FAIL_BREAK( n, "could not parse number\n" )
             value_t* v = new_number( d, n->type, n->precision, n->scientific );
             return v;

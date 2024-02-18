@@ -2,6 +2,7 @@
 *.toml
 *.json
 main
+notes
 obj/
 *.o
 tests/test

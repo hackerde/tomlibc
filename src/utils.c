@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#include <string.h>
+
 bool is_whitespace( char c )
 {
     return ( c==' ' || c=='\t' );
@@ -96,11 +98,11 @@ bool is_ascii( char c )
     );
 }
 
-bool is_numberend( char c, const char* d, size_t s )
+bool is_numberend( char c, const char* end )
 {
-    for( size_t i=0; i<s; i++ )
+    for( size_t i=0; i<strlen( end ); i++ )
     {
-        if ( c==d[ i ] )
+        if ( c==end[ i ] )
             return true;
     }
     return false;

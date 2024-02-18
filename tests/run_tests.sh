@@ -59,7 +59,7 @@ make test > $LOG
 cd $DIR/tests
 echo "$(date)" >> $LOG
 echo "=============" >> $LOG
-echo "Running ctoml tests" | tee $LOG
+echo "Running tomlibc tests" | tee $LOG
 echo "==================" | tee $LOG
 
 JSON=test.json

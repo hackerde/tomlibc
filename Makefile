@@ -32,4 +32,4 @@ test: $(TESTS)/test.c $(LOBJ) $(SOBJ)
 .PHONY: clean
 
 clean:
-	rm -f $(ODIR)/*.o main
+	rm -f $(ODIR)/*.o main $(TESTS)/test
