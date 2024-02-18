@@ -1,7 +1,7 @@
 > [!WARNING]  
 > This project is still a work in progress.
 
-# ctoml
+# tomlibc
 
 TOML parser written in C.
 Written to be compliant with [TOML v1.0.0](https://toml.io/en/v1.0.0).
@@ -26,7 +26,7 @@ The test suite also includes the [official compliance tests](https://github.com/
 
 ```bash
 $ mkdir -p obj
-$ ./tests/run_tests.sh          # this runs the ctoml tests
+$ ./tests/run_tests.sh          # this runs the tomlibc tests
 $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 ```
 
@@ -35,10 +35,10 @@ $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 > [!NOTE]
 > This has only been tested on macOS Sonoma Version 14.2.1 with clang 12.0.5
 
-**ctoml**
+**tomlibc**
 
 ```
-Running ctoml tests
+Running tomlibc tests
 ==================
 ...
 [REPORT]: Passed 52 tests | Failed 3 tests | Percent: 94.54%
@@ -50,7 +50,7 @@ Running ctoml tests
 Running toml-test tests
 ==================
 ...
-[REPORT]: Passed 390 tests | Failed 148 tests | Percent: 72.49%
+[REPORT]: Passed 392 tests | Failed 146 tests | Percent: 72.86%
 ```
 
 ## Limitations

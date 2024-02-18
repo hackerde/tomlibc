@@ -21,7 +21,6 @@ struct datetime
 
 char*       parse_basicstring   ( tokenizer_t* tok, char* value );
 char*       parse_literalstring ( tokenizer_t* tok, char* value );
-datetime_t* parse_datetime      ( tokenizer_t* tok, char* value );
 double      parse_inf_nan       ( tokenizer_t* tok, bool negative );
 value_t*    parse_array         ( tokenizer_t* tok, value_t* arr );
 double      parse_boolean       ( tokenizer_t* tok );
@@ -30,26 +29,29 @@ void        parse_comment       ( tokenizer_t* tok );
 void        parse_whitespace    ( tokenizer_t* tok );
 char*       parse_escape        ( tokenizer_t* tok );
 
+datetime_t* parse_datetime(
+    tokenizer_t*    tok,
+    char*           value,
+    const char*     num_end
+);
+
 double parse_base_uint(
     tokenizer_t*    tok,
     int             base,
     char*           value,
-    const char*     num_end,
-    size_t          num_len
+    const char*     num_end
 );
 
 number_t* parse_number(
     tokenizer_t*    tok,
     char*           value,
     double*         d,
-    const char*     num_end,
-    size_t          num_len
+    const char*     num_end
 );
 
 value_t* parse_value(
     tokenizer_t*    tok,
-    const char*     num_end,
-    size_t num_len
+    const char*     num_end
 );
 
 #endif

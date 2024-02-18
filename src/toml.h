@@ -185,7 +185,7 @@ void dump_value( value_t* v )
             printf( "{\"type\": \"datetime\", \"value\": " );
             char buf[ 255 ] = { 0 };
             strftime( buf, sizeof( buf ), v->format, ( struct tm* )v->data );
-            printf( "\"%s %lu\"}", buf, (( struct tm* )v->data)->tm_gmtoff );
+            printf( "\"%s\"}", buf);
             break;
         }
         case DATETIMELOCAL:

@@ -20,7 +20,7 @@ bool is_digit( char c );
 bool is_hexdigit( char c );
 bool is_numberstart( char c );
 bool is_ascii( char c );
-bool is_numberend( char c, const char* d, size_t s );
+bool is_numberend( char c, const char* end );
 bool is_decimalpoint( char c );
 bool is_underscore( char c );
 bool is_arraystart( char c );
