@@ -258,6 +258,7 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
         }
         else if( is_arraysep( get_token( tok ) ) )
         {
+            FAIL_BREAK( !sep, "expected value but got , instead\n" )
             sep = true;
             next_token( tok );
         }
@@ -317,11 +318,13 @@ key_t* parse_inlinetable( tokenizer_t* tok )
     {
         if( is_inlinetableend( get_token( tok ) ) )
         {
+            FAIL_BREAK( !sep, "cannot have trailing comma in inline table\n" )
             next_token( tok );
             return keys;
         }
         else if( is_inlinetablesep( get_token( tok ) ) )
         {
+            FAIL_BREAK( !sep, "expected key-value but got , instead" )
             sep = true;
             next_token( tok );
         }
@@ -462,9 +465,10 @@ double parse_base_uint(
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_numberend( get_token( tok ), num_end ) )
         {
+            FAIL_BREAK( idx!=0, "incomplete non-decimal number" )
             char* end;
             unsigned long num = strtoul( value, &end, base );
-            if( value!=end )
+            if( end==value+idx )
                 d = ( double ) num;
             else
                 LOG_ERR( "could not convert %s to base %d\n", value, base );
@@ -473,8 +477,8 @@ double parse_base_uint(
         else if( is_underscore( get_token( tok ) ) )
         {
             next_token( tok );
-            if( ( is_digit( get_token( tok ) ) || is_hexdigit( get_token( tok ) ) ) && 
-                ( is_digit( get_prev_prev( tok ) ) || is_hexdigit( get_prev_prev( tok ) ) ) )
+            if( ( is_digit( get_token( tok ) ) || ( base==16 && is_hexdigit( get_token( tok ) ) ) ) &&
+                ( is_digit( get_prev_prev( tok ) ) || ( base==16 && is_hexdigit( get_prev_prev( tok ) ) ) ) )
                 value[ idx++ ] = get_token( tok );
             else
                 LOG_ERR_BREAK( "stray %c character\n", get_prev( tok ) );
@@ -505,9 +509,15 @@ number_t* parse_number(
         {
             char* end;
             double num = strtod( value, &end );
-            FAIL_RETURN( value!=end, "could not convert %s to double\n", value )
+            FAIL_RETURN( end==value+idx, "could not convert %s to double\n", value )
             *d = num;
             if( n->precision>0 ) n->precision--;
+            if( n->type==INT && num!=0 )
+            {
+                FAIL_RETURN( value[0]!='0', "cannot have leading zero for integers" )
+                if( value[0]=='+' || value[0]=='-' )
+                    FAIL_RETURN( value[1]!='0', "cannot have leading zero for signed integers" )
+            }
             return n;
         }
         else if( idx==0 && get_token( tok )=='0' )
@@ -573,6 +583,10 @@ number_t* parse_number(
             else
                 LOG_ERR_RETURN( "unknown or invalid number\n" )
         }
+        else if( get_token( tok )=='x' || get_token( tok )=='X' ||
+                 get_token( tok )=='b' || get_token( tok )=='B' ||
+                 get_token( tok )=='o' || get_token( tok )=='O' )
+            LOG_ERR_BREAK( "invalid decimal number, found stray character %c\n", get_token( tok ) )
         else
         {
             value[ idx++ ] = get_token( tok );
@@ -587,9 +601,15 @@ number_t* parse_number(
     }
     char* end;
     double num = strtod( value, &end );
-    FAIL_RETURN( value!=end, "could not convert %s to double\n", value )
+    FAIL_RETURN( end==value+idx, "could not convert %s to double\n", value )
     *d = num;
     if( n->precision>0 ) n->precision--;
+    if( n->type==INT && num!=0 )
+    {
+        FAIL_RETURN( value[0]!='0', "cannot have leading zero for integers" )
+        if( value[0]=='+' || value[0]=='-' )
+            FAIL_RETURN( value[1]!='0', "cannot have leading zero for signed integers" )
+    }
     return n;
 }
 

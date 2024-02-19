@@ -50,7 +50,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[REPORT]: Passed 392 tests | Failed 146 tests | Percent: 72.86%
+[REPORT]: Passed 423 tests | Failed 115 tests | Percent: 78.62%
 ```
 
 ## Limitations
@@ -63,6 +63,5 @@ Aside from the usual bug fixes, the following are *major* features that will be 
 
 There are also a few other *minor* issues that will eventually be addressed as well:
 
-- [ ] do not allow trailing commas in inline tables
 - [ ] print line and column correctly on error
 - [ ] allow empty quoted keys

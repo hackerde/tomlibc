@@ -36,6 +36,7 @@ key_t* add_subkey(
 {
     if( key->last==NULL )
     {
+        // first time adding a subkey
         memset( key->subkeys, 0, MAX_NUM_SUBKEYS );
         key->last = key->subkeys;
     }
@@ -43,7 +44,13 @@ key_t* add_subkey(
     if( s )
     {
         if( compatible_keys( s->type, subkey->type ) )
+        {
+            // re-defining a TABLE as a TABLELEAF
+            // is allowed only once
+            if( subkey->type==TABLELEAF )
+                s->type = TABLELEAF;
             return s;
+        }
         else
         {
             LOG_ERR_RETURN(
@@ -59,6 +66,10 @@ key_t* add_subkey(
     {
         if( key->type==ARRAYTABLE )
         {
+            // since an ARRAYTABLE is a list of a map of key-value,
+            // and re-defining an ARRAYTABLE means adding another map
+            // of key-value to the list, we use the `value->arr`
+            // attribute of the key to store each map of key-values
             key_t* a = add_subkey( key->value->arr[key->idx]->data, subkey );
             return a;
         }
@@ -96,14 +107,28 @@ bool compatible_keys(
     key_type_t current
 )
 {
+    // re-definition rules
+    // [existing]
+    // [current]
+
+    // `a = b`
+    // `a = c`
     if( existing==KEYLEAF )
         return false;
+    // `[a.b]`
+    // `[a.b]`
     if( existing==TABLELEAF && current==TABLELEAF )
         return false;
+    // `[a.b] or b.c = d`
+    // `[a.b.e] or [b.e]`
     if( ( existing==TABLELEAF || existing==KEY ) && current==TABLE )
         return true;
+    // `[a.b]`
+    // `[a]`
     if( existing==TABLE && current==TABLELEAF )
         return true;
+    // `[[t]]`
+    // `[t.s]`
     if( existing==ARRAYTABLE && current==TABLE )
         return true;
     if( current==existing )
