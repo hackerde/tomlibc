@@ -3,6 +3,10 @@
 
 #include "models.h"
 
+// NOTE(AJB) The headers in lib/ generally have great hygiene. Only possible problem is not being prefixes with
+// something like "toml_". This is (usually) okay as long as these headers aren't publicaly exposed. And.. we all
+// get lazy about it at some point anyways (it's annoying).
+
 typedef struct tokenizer tokenizer_t;
 struct tokenizer {
     FILE*   stream;

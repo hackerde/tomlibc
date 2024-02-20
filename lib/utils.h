@@ -9,6 +9,7 @@
     which file, line and function the error
     was raised in.
 */
+// NOTE(AJB): See "do { } while(0)" ... this applies to all the macros
 #define LOG_ERR( ... )                      \
     { fprintf( stderr, "%s:%d [%s]: ",      \
     __FILE__, __LINE__, __func__ );         \
@@ -18,6 +19,8 @@
     Macro `LOG_ERR_BREAK` calls `LOG_ERR`
     and then calls a `break;`
 */
+// NOTE(AJB): It's generally considered bad practice to hide control-flow effects in macros. Since you
+// can make code Very Convoluted in macros, it's good to be very conservative with them
 #define LOG_ERR_BREAK( ... )                \
     { LOG_ERR( __VA_ARGS__ );               \
     break; }

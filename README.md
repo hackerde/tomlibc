@@ -1,4 +1,4 @@
-> [!WARNING]  
+> [!WARNING]
 > This project is still a work in progress.
 
 # tomlibc
@@ -65,3 +65,7 @@ There are also a few other *minor* issues that will eventually be addressed as w
 
 - [ ] print line and column correctly on error
 - [ ] allow empty quoted keys
+
+# NOTE (AJB) General Comments:
+- The distinction btwn src/ and lib/ is unclear and unstandard. That said, if you ask what the standard is, I'm gonna just shrug because
+  projects are all over the place. C/C++ seem to have the least consistant ecosystems and people fall into different "camps".

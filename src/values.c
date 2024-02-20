@@ -10,11 +10,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+// NOTE(AJB): Just do 'char VALUE[SIZE] = {};'
 #define VALUE_INIT( SIZE )      \
     char value[ SIZE ];         \
     memset( value, 0, SIZE );
 
-#define PARSE_DT_FORMAT( FORMATS, TYPE )                                    \
+// NOTE(AJB): Personally I'm not a fan of big multi-line macros. I think this is the biggest area
+// that me and KB disagree. I'd make this a "static inline" function and accept the extra boilerplate.
+#define PARSE_DT_FORMAT( FORMATS, TYPE )                                \
     for( size_t i=0; i<sizeof( FORMATS )/sizeof( char* ); i++ )             \
     {                                                                       \
         char* e = strptime( value, FORMATS[ i ], time );                    \
@@ -282,6 +285,13 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
 
 double parse_boolean( tokenizer_t* tok )
 {
+  // NOTE(AJB): With proper tokenizer.. this function is just:
+  //   if (0 == memcmp(token_string, "true", 4)) { return 1.0; }
+  //   if (0 == memcmp(token_string, "false", 5)) { return 0.0; }
+  //   return 2.0;
+  //
+  // Actually on second thought.. I think this is probably broken as is.. because
+  // you'd parse "trued" as "true" (you're only looking at the token prefix, not the whole token)
     double ret = 2.0;
     if( get_token( tok )=='t' )
     {

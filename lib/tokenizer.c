@@ -4,6 +4,20 @@
 #include <string.h>
 #include <stdlib.h>
 
+// NOTE(AJB) Usually a token is some basic syntax element like an integer or string or keyword.
+// a single char is usually not considered to be a token. E.g. if you we're parsing C code, these
+// would be tokens (in most impls):
+//   foobar     (identifier)
+//   8675309    (integer)
+//   0xB00B135  (hex-integer)
+//   "hackerde" (string)
+//   while      (keyword)
+//
+// Typically, the lexer/scanner/tokenizer consumes the raw character stream and produces a token stream
+// from there, it's much easier to build a parser over abstract tokens. For example: an if-statement is
+// the structure: TOKEN_IF TOKEN_LPARAEN expression TOKEN_RPAREN statement. It's much easier when you
+// don't have to think character-by-character. There's nothing inherently wrong with the way you chose to
+// do it.. it's just not what "tokenizer" means.
 tokenizer_t* new_tokenizer( FILE* input )
 {
     tokenizer_t* tok = calloc( 1, sizeof( tokenizer_t ) );
@@ -17,6 +31,8 @@ tokenizer_t* new_tokenizer( FILE* input )
     tok->has_token = true;
     return tok;
 }
+
+// NOTE(AJB) Missing "delete_tokenizer". Welcome to C. Enjoy your stay :-)
 
 size_t next_token( tokenizer_t* tok )
 {

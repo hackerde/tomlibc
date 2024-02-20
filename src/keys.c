@@ -15,9 +15,13 @@
 
 #define RETURN_SUBKEY( TYPE, CSTR )             \
     key_t* subkey = new_key( TYPE );            \
-    memcpy( subkey->id, CSTR, strlen( CSTR ) ); \
+    // NOTE(AJB) This looks like a buffer-overflow ... why is the string length always less than sizeof(subkey->id) ??
+    memcpy( subkey->id, CSTR, strlen( CSTR ) );     \
     return subkey;
 
+// NOTE(AJB): I really think this would be cleaner if you did a proper tokenizer. See comments in tokenizer.c.
+// At this stage, you really don't want to be thinking about whitespace and comments. A barekey is just
+// "identifier".. trivial.
 key_t* parse_barekey(
     tokenizer_t*    tok,
     char            end,
@@ -295,7 +299,10 @@ key_t* parse_keyval(
     key_t*          root
 )
 {
-    if( is_commentstart( get_token( tok ) ) )
+  // NOTE(AJB) This general flow makes sense. Very LL(1) recersive-descent predictive parser.
+  // Step (1) check some prefix, Step (2) recursing into it.
+  // But again, you should be doing it over tokens
+  if( is_commentstart( get_token( tok ) ) )
     {
         parse_comment( tok );
         return key;
@@ -331,8 +338,8 @@ key_t* parse_keyval(
         return table;
     }
     else if(
-        get_prev( tok )=='\0' || 
-        is_newline( get_prev( tok ) ) || 
+        get_prev( tok )=='\0' ||
+        is_newline( get_prev( tok ) ) ||
         ( is_whitespace( get_prev( tok ) ) &&
         tok->newline )
     )
@@ -355,7 +362,7 @@ key_t* parse_keyval(
         else
             subkey->value = v;
         parse_whitespace( tok );
-        return key; 
+        return key;
     }
     else
         LOG_ERR_RETURN( "unhandled character %c\n", get_token( tok ) )

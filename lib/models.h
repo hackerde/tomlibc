@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 
+// NOTE(AJB) Just use #include <stdbool.h> ... it's 2024 for god's sake (lol)
 #define bool    unsigned char
 #define uchar   unsigned char
 #define true    1
