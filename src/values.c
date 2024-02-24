@@ -174,6 +174,7 @@ datetime_t* parse_datetime(
 {
     datetime_t* dt = NULL;
     size_t idx = 0;
+    // check to allow only 1 whitespace character
     int spaces = 0;
     char* datetimes[] = {
         "%Y-%m-%dT%H:%M:%SZ",
@@ -352,6 +353,7 @@ void parse_comment( tokenizer_t* tok )
     while( has_token( tok ) )
     {
         next_token( tok );
+        // TODO: can be optimized by doing a getline
         if( is_newline( get_token( tok ) ) )
         {
             next_token( tok );
@@ -370,7 +372,7 @@ void parse_whitespace( tokenizer_t* tok )
     }
 }
 
-// unused
+// TODO: unused
 char* parse_escape( tokenizer_t* tok )
 {
     char* escaped = calloc( 1, 4*sizeof( char ) );

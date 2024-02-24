@@ -47,6 +47,14 @@
         continue;           \
     }
 
+/*
+    Function `toml_load` loads a TOML from either
+    a file or from stdin if `file` is NULL. It
+    initializes the tokenizer, and reads the input
+    stream until we reach an EOF. Upon success, it
+    returns a pointer to the `root` key and NULL on
+    failure.
+*/
 key_t* toml_load( const char* file )
 {
     key_t* root = new_key( TABLE );
@@ -79,6 +87,11 @@ key_t* toml_load( const char* file )
     return root;
 }
 
+/*
+    Function `dump_key`, `dump_value` and
+    `dump_toml` are functions to print out the
+    TOML data in a JSON format for compliance testing.
+*/
 void dump_key   ( key_t* k );
 void dump_value ( value_t* v );
 void dump_toml  ( key_t* root );

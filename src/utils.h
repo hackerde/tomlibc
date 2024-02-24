@@ -3,6 +3,14 @@
 
 #include "../lib/models.h"
 
+/*
+    All of these are utility functions to
+    check character criteria. Most of these
+    are defined according to TOML spec.
+    Some of these check the same thing, but
+    they are defined multitple times for code
+    readability.
+*/
 bool is_whitespace( char c );
 bool is_newline( char c );
 bool is_commentstart( char c );

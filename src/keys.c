@@ -42,6 +42,8 @@ key_t* parse_barekey(
         }
         else if( is_whitespace( get_token( tok ) ) )
         {
+            // bare keys cannot contain whitespace inside each
+            // key, so we use the `done` variable to track it
             done = true;
             parse_whitespace( tok );
         }
@@ -314,11 +316,17 @@ key_t* parse_keyval(
     {
         next_token( tok );
         key_t* table;
+        // [[ means we are parsing an arraytable
         if( is_tablestart( get_token( tok ) ) )
         {
             next_token( tok );
             table = parse_arraytable( tok, root, true );
             FAIL_RETURN( table, "failed to parse array of tables\n" )
+            // Since an arraytable is a map of key-value pairs, we
+            // store it in the `value->arr` attribute of the `key`.
+            // Each redefinition marks an new element in that array.
+            // The key-value pairs are added to the `subkeys` of a
+            // "pseudo" key that lives at `table->value->arr[ table->idx ].
             if( table->value==NULL )
                 table->value = new_array();
             table->value->arr[ ++( table->idx ) ] = new_inline_table( new_key( TABLE ) );
@@ -333,6 +341,8 @@ key_t* parse_keyval(
     else if(
         get_prev( tok )=='\0' || 
         is_newline( get_prev( tok ) ) || 
+        // ignore white space found at the beginning of
+        // a line while parsing a key
         ( is_whitespace( get_prev( tok ) ) &&
         tok->newline )
     )
@@ -341,6 +351,14 @@ key_t* parse_keyval(
         FAIL_RETURN( subkey, "failed to parse key\n" )
         value_t* v = parse_value( tok, "# \n" );
         FAIL_RETURN( v, "failed to parse value\n" )
+        // If we parsed an inlinetable, to keep it in sync
+        // with our datastructure, we add the keys from the
+        // parsed key-value pairs as `subkeys` of the "active"
+        // `key`. Since the inline table is defined as
+        // `a = b`, the type would be a KEYLEAF. Since KEYLEAF
+        // re-definitions are not allowed, we "unlock" it as a
+        // KEY, add the `subkeys` and "lock" it again as a
+        // `KEYLEAF` to prevent re-definition.
         if( v->type==INLINETABLE )
         {
             key_t* h = ( key_t * )( v->data );

@@ -23,7 +23,9 @@ value_t*    new_array           ( );
     it's argument which can contain one or many key
     value pairs, including subkeys. It then allocates
     some new memory for a key and adds all subkeys of
-    `k` as subkeys of this newly allocated key.
+    `k` as subkeys of this newly allocated key. It
+    returns a pointer to the newly allocated value.
+    The `data` attribute contains the newly created key.
 */
 value_t*    new_inline_table    ( key_t* k );
 
