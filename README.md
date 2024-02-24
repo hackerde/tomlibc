@@ -50,7 +50,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[REPORT]: Passed 423 tests | Failed 115 tests | Percent: 78.62%
+[REPORT]: Passed 432 tests | Failed 106 tests | Percent: 80.29%
 ```
 
 ## Limitations
@@ -59,9 +59,7 @@ Aside from the usual bug fixes, the following are *major* features that will be 
 
 - [ ] support for unicode escaping
 - [ ] millisecond precision
-- [ ] supporting `\r\n` as newline
 
 There are also a few other *minor* issues that will eventually be addressed as well:
 
 - [ ] print line and column correctly on error
-- [ ] allow empty quoted keys

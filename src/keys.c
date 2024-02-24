@@ -69,25 +69,23 @@ key_t* parse_basicquotedkey(
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_ID_LENGTH, "buffer overflow\n" )
-        if( idx==0 && is_basicstringstart( get_token( tok ) ) )
-            ;
-        else if( idx>0 && is_basicstringstart( get_token( tok ) ) )
+        if( is_basicstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             if( is_whitespace( get_token( tok ) ) )
                 parse_whitespace( tok );
             if( is_dot( get_token( tok ) ) )
             {
-                FAIL_BREAK( idx!=0, "key cannot be empty\n" )
                 RETURN_SUBKEY( branch, id )
             }
             else if( get_token( tok )==end )
             {
-                FAIL_BREAK( idx!=0, "key cannot be empty\n" )
                 RETURN_SUBKEY( leaf, id )
             }
             LOG_ERR_BREAK( "unknown character %c after end of key\n", get_token( tok ) )
         }
+        else if( is_newline( get_token( tok ) ) )
+            LOG_ERR_BREAK( "unescaped newline while parsing key\n" )
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
@@ -113,25 +111,23 @@ key_t* parse_literalquotedkey(
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_ID_LENGTH, "buffer overflow\n" )
-        if( idx==0 && is_literalstringstart( get_token( tok ) ) )
-            ;
-        else if( idx>0 && is_literalstringstart( get_token( tok ) ) )
+        if( is_literalstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             if( is_whitespace( get_token( tok ) ) )
                 parse_whitespace( tok );
             if( is_dot( get_token( tok ) ) )
             {
-                FAIL_BREAK( idx!=0, "key cannot be empty\n" )
                 RETURN_SUBKEY( branch, id )
             }
             else if( get_token( tok )==end )
             {
-                FAIL_BREAK( idx!=0, "key cannot be empty\n" )
                 RETURN_SUBKEY( leaf, id )
             }
             LOG_ERR_BREAK( "unknown character %c after end of key\n", get_token( tok ) )
         }
+        else if( is_newline( get_token( tok ) ) )
+            LOG_ERR_BREAK( "unescaped newline while parsing key\n" )
         else
             id[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -163,6 +159,7 @@ key_t* parse_key(
             parse_whitespace( tok );
         else if( is_basicstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_basicquotedkey( tok, '=', KEY, KEYLEAF );
             FAIL_BREAK( subkey, "failed to parse basic quoted key\n" )
             subkey = add_subkey( key, subkey );
@@ -171,6 +168,7 @@ key_t* parse_key(
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_literalquotedkey( tok, '=', KEY, KEYLEAF );
             FAIL_BREAK( subkey, "failed to parse literal quoted key\n" )
             subkey = add_subkey( key, subkey );
@@ -213,6 +211,7 @@ key_t* parse_table(
             parse_whitespace( tok );
         else if( is_basicstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_basicquotedkey( tok, ']', TABLE, TABLELEAF );
             FAIL_BREAK( subkey, "failed to parse basic quoted key\n" )
             subkey = add_subkey( key, subkey );
@@ -221,6 +220,7 @@ key_t* parse_table(
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_literalquotedkey( tok, ']', TABLE, TABLELEAF );
             FAIL_BREAK( subkey, "failed to parse literal quoted key\n" )
             subkey = add_subkey( key, subkey );
@@ -265,6 +265,7 @@ key_t* parse_arraytable(
             parse_whitespace( tok );
         else if( is_basicstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_basicquotedkey( tok, ']', TABLE, ARRAYTABLE );
             FAIL_BREAK( subkey, "failed to parse basic quoted key\n" )
             subkey = add_subkey( key, subkey );
@@ -273,6 +274,7 @@ key_t* parse_arraytable(
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
+            next_token( tok );
             key_t* subkey = parse_literalquotedkey( tok, ']', TABLE, ARRAYTABLE );
             FAIL_BREAK( subkey, "failed to parse literal quoted key\n" )
             subkey = add_subkey( key, subkey );
