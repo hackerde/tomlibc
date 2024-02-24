@@ -13,6 +13,7 @@
 */
 bool is_whitespace( char c );
 bool is_newline( char c );
+bool is_return( char c );
 bool is_commentstart( char c );
 bool is_equal( char c );
 bool is_escape( char c );

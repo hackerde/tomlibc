@@ -307,7 +307,7 @@ key_t* parse_keyval(
         parse_whitespace( tok );
         return key;
     }
-    else if( is_newline( get_token( tok ) ) )
+    else if( parse_newline( tok ) )
     {
         next_token( tok );
         return key;

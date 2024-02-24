@@ -50,7 +50,7 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
             {
                 // no chars parsed, seen ""
                 next_token( tok );
-                if( is_whitespace( get_token( tok ) ) || is_newline( get_token( tok ) ) )
+                if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
                     return value;
                 FAIL_BREAK( is_basicstringstart( get_token( tok ) ), "cannot start string with 2 double-quotes\n" )
                 multi = true;
@@ -73,9 +73,9 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
                 }
             }
         }
-        else if( is_newline( get_token( tok ) ) && !multi )
+        else if( parse_newline( tok ) && !multi )
             LOG_ERR_BREAK( "newline before end of string\n" )
-        else if( is_newline( get_token( tok ) ) && multi && idx==0 )
+        else if( parse_newline( tok ) && multi && idx==0 )
             ;
         else if( is_escape( get_token( tok ) ) )
         {
@@ -84,11 +84,11 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
             if( multi && c==0 )
             {
                 bool hit = false;
-                while( is_whitespace( get_token( tok ) ) || is_newline( get_token( tok ) ) )
+                while( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
                 {
                     if( is_whitespace( get_token( tok ) ) )
                         parse_whitespace( tok );
-                    if( is_newline( get_token( tok ) ) )
+                    if( parse_newline( tok ) )
                     {
                         hit = true;
                         next_token( tok );
@@ -129,7 +129,7 @@ char* parse_literalstring( tokenizer_t* tok, char* value )
             {
                 // no chars parsed, seen ''
                 next_token( tok );
-                if( is_whitespace( get_token( tok ) ) || is_newline( get_token( tok ) ) )
+                if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
                     return value;
                 FAIL_BREAK( is_literalstringstart( get_token( tok ) ), "cannot start string with 2 single-quotes\n" )
                 multi = true;
@@ -155,9 +155,9 @@ char* parse_literalstring( tokenizer_t* tok, char* value )
                 }
             }
         }
-        else if( is_newline( get_token( tok ) ) && !multi )
+        else if( parse_newline( tok ) && !multi )
             LOG_ERR_BREAK( "newline before end of string\n" )
-        else if( is_newline( get_token( tok ) ) && multi && idx==0 )
+        else if( parse_newline( tok ) && multi && idx==0 )
             ;
         else
             value[ idx++ ] = get_token( tok );
@@ -263,7 +263,7 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
             sep = true;
             next_token( tok );
         }
-        else if( is_newline( get_token( tok ) ) )
+        else if( parse_newline( tok ) )
             next_token( tok );
         else if( is_whitespace( get_token( tok ) ) )
             parse_whitespace( tok );
@@ -329,7 +329,7 @@ key_t* parse_inlinetable( tokenizer_t* tok )
             sep = true;
             next_token( tok );
         }
-        else if( is_newline( get_token( tok ) ) )
+        else if( parse_newline( tok ) )
             LOG_ERR_BREAK( "found newline in inline table\n" )
         else if( is_whitespace( get_token( tok ) ) )
             parse_whitespace( tok );
@@ -354,7 +354,7 @@ void parse_comment( tokenizer_t* tok )
     {
         next_token( tok );
         // TODO: can be optimized by doing a getline
-        if( is_newline( get_token( tok ) ) )
+        if( parse_newline( tok ) )
         {
             next_token( tok );
             break;
@@ -370,6 +370,21 @@ void parse_whitespace( tokenizer_t* tok )
             break;
         next_token( tok );
     }
+}
+
+bool parse_newline( tokenizer_t* tok )
+{
+    if( is_newline( get_token( tok ) ) )
+        return true;
+    else if( is_return( get_token( tok ) ) )
+    {
+        bool a = next_token( tok );
+        if( is_newline( get_token( tok ) ) )
+            return true;
+        else
+            backtrack( tok, a );
+    }
+    return false;
 }
 
 // TODO: unused
@@ -622,7 +637,7 @@ value_t* parse_value(
 {
     while( has_token( tok ) )
     {
-        FAIL_BREAK( !is_newline( get_token( tok ) ), "got a newline before any value\n" )
+        FAIL_BREAK( !parse_newline( tok ), "got a newline before any value\n" )
         if( is_whitespace( get_token( tok ) ) )
         {
             parse_whitespace( tok );

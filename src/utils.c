@@ -12,6 +12,11 @@ bool is_newline( char c )
     return ( c=='\n' );
 }
 
+bool is_return( char c )
+{
+    return ( c=='\r' );
+}
+
 bool is_commentstart( char c )
 {
     return ( c=='#' );

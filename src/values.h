@@ -50,6 +50,7 @@ double      parse_boolean       ( tokenizer_t* tok );
 key_t*      parse_inlinetable   ( tokenizer_t* tok );
 void        parse_comment       ( tokenizer_t* tok );
 void        parse_whitespace    ( tokenizer_t* tok );
+bool        parse_newline       ( tokenizer_t* tok );
 char*       parse_escape        ( tokenizer_t* tok );
 datetime_t* parse_datetime(
     tokenizer_t*    tok,
