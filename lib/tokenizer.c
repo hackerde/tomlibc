@@ -28,6 +28,8 @@ size_t next_token( tokenizer_t* tok )
     if( tok->has_token || tok->cursor==0 )
     {
         char c = fgetc( tok->stream );
+        // if we parsed some non-whitespace character since we saw
+        // the newline, then we aren't on a newline anymore
         if( tok->prev && tok->prev!=' ' && tok->prev!='\t' && tok->prev!='\n' )
             tok->newline = false;
         if( c=='\n' )

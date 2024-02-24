@@ -39,7 +39,8 @@ value_t* new_datetime(
     value_t* v = calloc( 1, sizeof( value_t ) );
     v->type = type;
     v->data = calloc( 1, sizeof( struct tm ) );
-    v->format = format;
+    v->format = calloc( 1, strlen( format ) );
+    memcpy( v->format, format, strlen( format ) );
     memcpy( v->data, dt, sizeof( struct tm ) );
     return v;
 }

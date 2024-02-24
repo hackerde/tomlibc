@@ -52,6 +52,7 @@ NC='\033[0m'
 
 DIR=$(realpath $(realpath $0)/../..)
 LOG=$DIR/tests/test.log
+BINARY=$DIR/tests/test
 
 cd $DIR
 make test > $LOG
@@ -74,7 +75,7 @@ if [[ -z $TYPE || "$TYPE" == "valid" ]]; then
         echo $test >> $LOG
         echo "=================" >> $LOG
         echo >> $LOG
-        ./test $test 2>>$LOG | tee $JSON >/dev/null
+        $BINARY $test 2>>$LOG | tee $JSON >/dev/null
         test $? -eq 0 || echo "$test: [FAILED]"
         json="${test%.toml}.json"
         diff <(jq --sort-keys . $json 2>>$LOG) <(jq --sort-keys . $JSON 2>>$LOG) >> $LOG
@@ -96,7 +97,7 @@ if [[ -z $TYPE || "$TYPE" == "invalid" ]]; then
         echo $test >> $LOG
         echo "=================" >> $LOG
         echo >> $LOG
-        ./test $test >> $LOG 2>/dev/null
+        $BINARY $test >> $LOG 2>/dev/null
         r=$?
         test $r -eq 1 && PASSED=$(( PASSED+1 )) || FAILED=$(( FAILED+1 ))
         test $r -eq 1 && printf "[${GREEN}PASSED${NC}]: ${test}\n" || printf "[${RED}FAILED${NC}]: ${test}\n"
