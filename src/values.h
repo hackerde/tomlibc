@@ -42,8 +42,6 @@ struct datetime
     failure. `parse_comment` and `parse_newline` are the
     only exceptions that do not return anything.
 */
-char*       parse_basicstring   ( tokenizer_t* tok, char* value );
-char*       parse_literalstring ( tokenizer_t* tok, char* value );
 double      parse_inf_nan       ( tokenizer_t* tok, bool negative );
 value_t*    parse_array         ( tokenizer_t* tok, value_t* arr );
 double      parse_boolean       ( tokenizer_t* tok );
@@ -51,7 +49,18 @@ key_t*      parse_inlinetable   ( tokenizer_t* tok );
 void        parse_comment       ( tokenizer_t* tok );
 void        parse_whitespace    ( tokenizer_t* tok );
 bool        parse_newline       ( tokenizer_t* tok );
-char*       parse_escape        ( tokenizer_t* tok );
+int         parse_escape        ( tokenizer_t* tok, char* escaped );
+int         parse_unicode       ( tokenizer_t* tok, char* escaped );
+char* parse_basicstring(
+    tokenizer_t*    tok,
+    char*           value,
+    bool            multi
+);
+char* parse_literalstring(
+    tokenizer_t*    tok,
+    char*           value,
+    bool            multi
+);
 datetime_t* parse_datetime(
     tokenizer_t*    tok,
     char*           value,
