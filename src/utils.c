@@ -93,7 +93,7 @@ bool is_numberstart( char c )
     );
 }
 
-bool is_ascii( char c )
+bool is_bare_ascii( char c )
 {
     return (
         ( c>='A' && c<='Z') ||
@@ -136,27 +136,4 @@ bool is_arrayend( char c )
 bool is_arraysep( char c )
 {
     return ( c==',' );
-}
-
-char escape( char c )
-{
-    switch ( c )
-    {
-        case 'b':
-            return '\b';
-        case 't':
-            return '\t';
-        case 'n':
-            return '\n';
-        case 'f':
-            return '\f';
-        case 'r':
-            return '\r';
-        case '"':
-            return '\"';
-        case '\\':
-            return '\\';
-        default:
-            return 0;
-    }
 }

@@ -28,13 +28,12 @@ bool is_dot( char c );
 bool is_digit( char c );
 bool is_hexdigit( char c );
 bool is_numberstart( char c );
-bool is_ascii( char c );
+bool is_bare_ascii( char c );
 bool is_numberend( char c, const char* end );
 bool is_decimalpoint( char c );
 bool is_underscore( char c );
 bool is_arraystart( char c );
 bool is_arrayend( char c );
 bool is_arraysep( char c );
-char escape( char c );
 
 #endif

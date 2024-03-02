@@ -31,35 +31,23 @@
     }                                                                       \
     if( dt ) return dt;
 
-char* parse_basicstring( tokenizer_t* tok, char* value )
+char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
 {
     size_t idx = 0;
-    bool multi = false;
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_basicstringstart( get_token( tok ) ) )
         {
-            if( idx > 0 && !multi )
+            if( !multi )
             {
-                // some chars parsed, not multiline, seen "
                 next_token( tok );
                 return value;
             }
-            else if( idx==0 && !multi )
+            else
             {
-                // no chars parsed, seen ""
-                next_token( tok );
-                if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
-                    return value;
-                FAIL_BREAK( is_basicstringstart( get_token( tok ) ), "cannot start string with 2 double-quotes\n" )
-                multi = true;
-            }
-            else if( multi )
-            {
-                // seen """
-                size_t a = next_token( tok );
-                size_t b = next_token( tok );
+                int a = next_token( tok );
+                int b = next_token( tok );
                 if( is_basicstringstart( get_token( tok ) ) && is_basicstringstart( get_prev( tok ) ) )
                 {
                     next_token( tok );
@@ -80,7 +68,8 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
-            char c = escape( get_token( tok ) );
+            char escaped[5] = { 0 };
+            int c = parse_escape( tok, escaped );
             if( multi && c==0 )
             {
                 bool hit = false;
@@ -100,7 +89,12 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
             else
             {
                 FAIL_BREAK( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) )
-                value[ idx++ ] = c;
+                FAIL_BREAK( c<5, "parsed escape sequence is too long\n" )
+                for( int i=0; i<c; i++ )
+                    value[ idx++ ] = escaped[i];
+                // parse_escape will parse everything and move on to the next token
+                // so we call backtrack here to offset the next_token call outside
+                backtrack( tok, 1 );
             }
         }
         else
@@ -110,35 +104,23 @@ char* parse_basicstring( tokenizer_t* tok, char* value )
     return NULL;
 }
 
-char* parse_literalstring( tokenizer_t* tok, char* value )
+char* parse_literalstring( tokenizer_t* tok, char* value, bool multi )
 {
     size_t idx = 0;
-    bool multi = false;
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_literalstringstart( get_token( tok ) ) )
         {
-            if( idx > 0 && !multi )
+            if( !multi )
             {
-                // some chars parsed, not multiline, seen '
                 next_token( tok );
                 return value;
             }
-            else if( idx==0 && !multi )
+            else
             {
-                // no chars parsed, seen ''
-                next_token( tok );
-                if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
-                    return value;
-                FAIL_BREAK( is_literalstringstart( get_token( tok ) ), "cannot start string with 2 single-quotes\n" )
-                multi = true;
-            }
-            else if( multi )
-            {
-                // seen '''
-                next_token( tok );
-                bool next = next_token( tok );
+                int a = next_token( tok );
+                int b = next_token( tok );
                 if( is_literalstringstart( get_token( tok ) ) && is_literalstringstart( get_prev( tok ) ) )
                 {
                     next_token( tok );
@@ -147,10 +129,7 @@ char* parse_literalstring( tokenizer_t* tok, char* value )
                 else
                 {
                     value[ idx++ ] = '\'';
-                    if( next )
-                        backtrack( tok, 1 );
-                    else
-                        LOG_ERR_BREAK( "reached end of file before end of string\n" )
+                    backtrack( tok, a+b-1 );
                     continue;
                 }
             }
@@ -387,85 +366,130 @@ bool parse_newline( tokenizer_t* tok )
     return false;
 }
 
-// TODO: unused
-char* parse_escape( tokenizer_t* tok )
+int parse_unicode( tokenizer_t* tok, char* escaped )
 {
-    char* escaped = calloc( 1, 4*sizeof( char ) );
+    size_t digits = 0;
+    char code[ 9 ] = { 0 };
+    while( has_token( tok ) )
+    {
+        if( digits>8 )
+            LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+        if( is_hexdigit( get_token( tok ) ) || is_digit( get_token( tok ) ) )
+        {
+            code[ digits++ ] = get_token( tok );
+            next_token( tok );
+            continue;
+        }
+        else
+        {
+            if( digits!=4 && digits!=8 )
+                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+            char* end;
+            unsigned long num = strtoul( code, &end, 16 );
+            if( end!=code+digits )
+                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+            // Unicode Scalar Values: %x80-D7FF / %xE000-10FFFF
+            if( ( num>=0x0 && num<=0xD7FF ) || ( num>=0xE000 && num<=0x10FFFF ) )
+            {
+                // UTF-8 encoding
+                if( num>=0x0 && num<=0x7F )
+                {
+                    escaped[0] = ( num ) & 0b01111111;
+                    return 1;
+                }
+                else if( num>=0x80 && num<=0x7FF )
+                {
+                    escaped[0] = ( 0b11000000 | ( num >> 6 ) )  & 0b11011111;
+                    escaped[1] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    return 2;
+                }
+                else if( ( num>=0x800 && num<=0xFFFF ) )
+                {
+                    escaped[0] = ( 0b11100000 | ( num >> 12 ) ) & 0b11101111;
+                    escaped[1] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[2] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    return 3;
+                }
+                else
+                {
+                    escaped[0] = ( 0b11110000 | ( num >> 18 ) ) & 0b11110111;
+                    escaped[1] = ( 0b10000000 | ( num >> 12 ) ) & 0b10111111;
+                    escaped[2] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[3] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    return 4;
+                }
+                return 0;
+            }
+            else
+                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+        }
+    }
+    return 0;
+}
+
+// TODO: unused
+int parse_escape( tokenizer_t* tok, char* escaped )
+{
     switch ( get_token( tok ) )
     {
         case 'b':
         {
             escaped[0] = '\b';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case 't':
         {
             escaped[0] = '\t';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case 'n':
         {
             escaped[0] = '\n';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case 'f':
         {
             escaped[0] = '\f';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case 'r':
         {
             escaped[0] = '\r';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case '"':
         {
             escaped[0] = '\"';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case '\\':
         {
             escaped[0] = '\\';
-            return escaped;
+            next_token( tok );
+            return 1;
         }
         case 'u':
         {
-            size_t digits = 0;
-            char code[ 9 ] = { 0 };
             next_token( tok );
-            while( has_token( tok ) )
-            {
-                if( digits>8 )
-                    break;
-                if( is_hexdigit( get_token( tok ) ) || is_digit( get_token( tok ) ) )
-                    code[ digits++ ] = get_token( tok );
-                else
-                {
-                    if( digits!=4 || digits!=8 )
-                        break;
-                    char* end;
-                    unsigned long num = strtoul( code, &end, 16 );
-                    if( code==end )
-                        break;
-                    // %x80-D7FF / %xE000-10FFFF
-                    // return actual escape
-                    if( ( num>=0x80 && num<=0xD7FF ) || ( num>=0xE000 && num<=0x10FFFF ) )
-                    {
-                        escaped[0] = (num >> 24) & 0xFF;
-                        escaped[1] = (num >> 16) & 0xFF;
-                        escaped[2] = (num >> 8) & 0xFF;
-                        escaped[3] = num & 0xFF;
-                        return escaped;
-                    }
-                    else
-                        break;
-                }
-            }
-            LOG_ERR_RETURN( "Invalid unicode escape code\n" )
+            int u = parse_unicode( tok, escaped );
+            return u;
+        }
+        case 'U':
+        {
+            next_token( tok );
+            int u = parse_unicode( tok, escaped );
+            return u;
         }
         default:
-            LOG_ERR_RETURN( "Unknown escape sequence: \\%c\n", get_token( tok) )
+            return 0;
     }
+    return 0;
 }
 
 double parse_base_uint(
@@ -646,8 +670,23 @@ value_t* parse_value(
         else if( is_basicstringstart( get_token( tok ) ) )
         {
             VALUE_INIT( MAX_STRING_LENGTH )
+            char* s;
             next_token( tok );
-            char* s = parse_basicstring( tok, value );
+            if( has_token( tok ) && is_basicstringstart( get_token( tok ) ) )
+            {
+                next_token( tok );
+                if( has_token( tok ) && is_basicstringstart( get_token( tok ) ) )
+                {
+                    next_token( tok );
+                    s = parse_basicstring( tok, value, true );
+                }
+                else if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
+                    s = value;
+                else
+                    LOG_ERR_BREAK( "cannot start string with 2 double-quotes\n" )
+            }
+            else
+                s = parse_basicstring( tok, value, false );
             FAIL_BREAK( s, "could not parse basic string\n" )
             value_t* v = new_string( value );
             return v;
@@ -655,8 +694,23 @@ value_t* parse_value(
         else if( is_literalstringstart( get_token( tok ) ) )
         {
             VALUE_INIT( MAX_STRING_LENGTH )
+            char* s;
             next_token( tok );
-            char* s = parse_literalstring( tok, value );
+            if( has_token( tok ) && is_literalstringstart( get_token( tok ) ) )
+            {
+                next_token( tok );
+                if( has_token( tok ) && is_literalstringstart( get_token( tok ) ) )
+                {
+                    next_token( tok );
+                    s = parse_literalstring( tok, value, true );
+                }
+                else if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
+                    s = value;
+                else
+                    LOG_ERR_BREAK( "cannot start string with 2 single-quotes\n" )
+            }
+            else
+                s = parse_literalstring( tok, value, false );
             FAIL_BREAK( s, "could not parse literal string\n" )
             value_t* v = new_string( value );
             return v;

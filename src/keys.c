@@ -47,7 +47,7 @@ key_t* parse_barekey(
             done = true;
             parse_whitespace( tok );
         }
-        else if( is_ascii( get_token( tok ) ) && !done )
+        else if( is_bare_ascii( get_token( tok ) ) && !done )
         {
             id[ idx++ ] = get_token( tok );
             next_token( tok );
@@ -89,9 +89,15 @@ key_t* parse_basicquotedkey(
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
-            char c = escape( get_token( tok ) );
+            char escaped[5] = { 0 };
+            int c = parse_escape( tok, escaped );
             FAIL_BREAK( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) )
-            id[ idx++ ] = c;
+            FAIL_BREAK( c<5, "parsed escape sequence is too long\n" )
+            for( int i=0; i<c; i++ )
+                id[ idx++ ] = escaped[i];
+            // parse_escape will parse everything and move on to the next token
+            // so we call backtrack here to offset the next_token call outside
+            backtrack( tok, 1 );
         }
         else
             id[ idx++ ] = get_token( tok );
