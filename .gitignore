@@ -1,10 +1,17 @@
+# developer
 .vscode/
+notes
+
+# input files
 *.toml
 *.json
+
+# compiled artifacts
 main
-notes
+tests/test
 obj/
 *.o
-tests/test
-tests/test.log
-tests/toml-test.log
+
+# logs
+tests/*.log
+tests/*.status*
