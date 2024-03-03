@@ -99,6 +99,8 @@ key_t* parse_basicquotedkey(
             // so we call backtrack here to offset the next_token call outside
             backtrack( tok, 1 );
         }
+        else if( is_control( get_token( tok ) ) )
+            LOG_ERR_BREAK( "control characters need to be escaped\n" )
         else
             id[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -134,6 +136,8 @@ key_t* parse_literalquotedkey(
         }
         else if( is_newline( get_token( tok ) ) )
             LOG_ERR_BREAK( "unescaped newline while parsing key\n" )
+        else if( is_control_literal( get_token( tok ) ) )
+            LOG_ERR_BREAK( "control characters need to be escaped\n" )
         else
             id[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -307,7 +311,8 @@ key_t* parse_keyval(
 {
     if( is_commentstart( get_token( tok ) ) )
     {
-        parse_comment( tok );
+        bool ok = parse_comment( tok );
+        FAIL_RETURN( ok, "invalid comment\n" )
         return key;
     }
     else if( is_whitespace( get_token( tok ) ) )

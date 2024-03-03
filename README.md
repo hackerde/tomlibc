@@ -15,7 +15,6 @@ An example [Makefile](Makefile) is also provided.
 ### Building
 
 ```bash
-$ mkdir -p obj
 $ make
 $ ./main
 ```
@@ -25,7 +24,6 @@ $ ./main
 The test suite also includes the [official compliance tests](https://github.com/toml-lang/toml-test).
 
 ```bash
-$ mkdir -p obj
 $ ./tests/run_tests.sh          # this runs the tomlibc tests
 $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 ```
@@ -41,7 +39,7 @@ $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 Running tomlibc tests
 ==================
 ...
-[REPORT]: Passed 53 tests | Failed 2 tests | Percent: 96.36%
+[TEST REPORT]: Passed 53 tests | Failed 2 tests | Percent: 96.36%
 ```
 
 **toml-test**
@@ -50,7 +48,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[REPORT]: Passed 434 tests | Failed 104 tests | Percent: 80.66%
+[TEST REPORT]: Passed 459 tests | Failed 79 tests | Percent: 85.31%
 ```
 
 ## Limitations

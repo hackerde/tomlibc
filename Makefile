@@ -18,9 +18,11 @@ _SOBJ = keys.o values.o utils.o
 SOBJ = $(patsubst %,$(ODIR)/%,$(_SOBJ))
 
 $(ODIR)/%.o: $(LIB)/%.c $(LDEPS)
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $<
 
 $(ODIR)/%.o: $(SRC)/%.c $(SDEPS) $(LOBJ)
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $<
 
 main: main.c $(LOBJ) $(SOBJ)
@@ -33,3 +35,4 @@ test: $(TESTS)/test.c $(LOBJ) $(SOBJ)
 
 clean:
 	rm -f $(ODIR)/*.o main $(TESTS)/test
+	rm -rf $(ODIR)
