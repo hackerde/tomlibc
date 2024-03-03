@@ -48,7 +48,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[TEST REPORT]: Passed 459 tests | Failed 79 tests | Percent: 85.31%
+[TEST REPORT]: Passed 462 tests | Failed 76 tests | Percent: 85.87%
 ```
 
 ## Limitations

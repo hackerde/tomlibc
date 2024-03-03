@@ -303,11 +303,12 @@ key_t* parse_inlinetable( tokenizer_t* tok )
 {
     key_t* keys = new_key( TABLE );
     bool sep = true;
+    bool first = true;
     while( has_token( tok ) )
     {
         if( is_inlinetableend( get_token( tok ) ) )
         {
-            FAIL_BREAK( !sep, "cannot have trailing comma in inline table\n" )
+            FAIL_BREAK( ( !sep || first ), "cannot have trailing comma in inline table\n" )
             next_token( tok );
             return keys;
         }
@@ -328,9 +329,23 @@ key_t* parse_inlinetable( tokenizer_t* tok )
             FAIL_BREAK( k, "failed to parse key\n" )
             value_t* v = parse_value( tok, ", }" );
             FAIL_BREAK( v, "failed to parse value\n" )
-            k->value = v;
+            // refer to inline table comment in `keys.c`
+            if( v->type==INLINETABLE )
+            {
+                key_t* h = ( key_t * )( v->data );
+                k->type = KEY;
+                for( key_t** iter=h->subkeys; iter<h->last; iter++ )
+                {
+                    key_t* e = add_subkey( k, *iter );
+                    FAIL_RETURN( e, "could not add inline table key %s\n", ( *iter )->id )
+                }
+                k->type = KEYLEAF;
+            }
+            else
+                k->value = v;
             parse_whitespace( tok );
             sep = false;
+            first = false;
         }
     }
     return NULL;
