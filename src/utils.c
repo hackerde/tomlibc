@@ -103,6 +103,35 @@ bool is_bare_ascii( char c )
     );
 }
 
+bool is_control( char c )
+{
+    return (
+        ( c>=0x0 && c<=0x8 )  ||
+        ( c>=0xA && c<=0x1F ) ||
+        ( c==0x7F )
+    );
+}
+
+bool is_control_multi( char c )
+{
+    return (
+        ( c>=0x0 && c<=0x8 )  ||
+        ( c==0xB || c==0xC )  ||
+        ( c>=0xE && c<=0x1F ) ||
+        ( c==0x7F )
+    );
+}
+
+bool is_control_literal( char c )
+{
+    return (
+        ( c!=0x9 ) &&
+        ( c!=0xA ) &&
+        ( c>=0x0 && c<=0x1F ) ||
+        ( c==0x7F )
+    );
+}
+
 bool is_numberend( char c, const char* end )
 {
     for( size_t i=0; i<strlen( end ); i++ )

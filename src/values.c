@@ -97,6 +97,10 @@ char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
                 backtrack( tok, 1 );
             }
         }
+        else if( !multi && is_control( get_token( tok ) ) )
+            LOG_ERR_BREAK( "control characters need to be escaped\n" )
+        else if( multi && is_control_multi( get_token( tok ) ) )
+            LOG_ERR_BREAK( "control characters need to be escaped\n" )
         else
             value[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -138,6 +142,8 @@ char* parse_literalstring( tokenizer_t* tok, char* value, bool multi )
             LOG_ERR_BREAK( "newline before end of string\n" )
         else if( parse_newline( tok ) && multi && idx==0 )
             ;
+        else if( is_control_literal( get_token( tok ) ) )
+            LOG_ERR_BREAK( "control characters need to be escaped\n" )
         else
             value[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -247,7 +253,10 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
         else if( is_whitespace( get_token( tok ) ) )
             parse_whitespace( tok );
         else if( is_commentstart( get_token( tok ) ) )
-            parse_comment( tok );
+        {
+            bool ok = parse_comment( tok );
+            FAIL_BREAK( ok, "invalid comment\n" )
+        }
         else
         {
             FAIL_BREAK( sep, "expected , between elements\n" )
@@ -327,18 +336,20 @@ key_t* parse_inlinetable( tokenizer_t* tok )
     return NULL;
 }
 
-void parse_comment( tokenizer_t* tok )
+bool parse_comment( tokenizer_t* tok )
 {
     while( has_token( tok ) )
     {
         next_token( tok );
-        // TODO: can be optimized by doing a getline
         if( parse_newline( tok ) )
         {
             next_token( tok );
-            break;
+            return true;
         }
+        if( is_control( get_token( tok ) ) )
+            return false;
     }
+    return true;
 }
 
 void parse_whitespace( tokenizer_t* tok )
