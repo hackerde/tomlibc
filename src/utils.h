@@ -38,5 +38,6 @@ bool is_underscore( char c );
 bool is_arraystart( char c );
 bool is_arrayend( char c );
 bool is_arraysep( char c );
+bool is_date( int year, int month, int day );
 
 #endif

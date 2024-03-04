@@ -10,27 +10,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define VALUE_INIT( SIZE )      \
-    char value[ SIZE ];         \
-    memset( value, 0, SIZE );
-
-#define PARSE_DT_FORMAT( FORMATS, TYPE )                                    \
-    for( size_t i=0; i<sizeof( FORMATS )/sizeof( char* ); i++ )             \
-    {                                                                       \
-        char* e = strptime( value, FORMATS[ i ], time );                    \
-        if( e!=NULL )                                                       \
-        {                                                                   \
-            dt = calloc( 1, sizeof( datetime_t ) );                         \
-            dt->format = calloc( 1, strlen( FORMATS[ i ] ) );               \
-            memcpy( dt->format, FORMATS[ i ], strlen( FORMATS[ i ] ) );     \
-            dt->type = TYPE;                                                \
-            dt->dt = time;                                                  \
-            break;                                                          \
-        }                                                                   \
-        memset( time, 0, sizeof( struct tm ) );                             \
-    }                                                                       \
-    if( dt ) return dt;
-
 char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
 {
     size_t idx = 0;
@@ -161,20 +140,6 @@ datetime_t* parse_datetime(
     size_t idx = 0;
     // check to allow only 1 whitespace character
     int spaces = 0;
-    char* datetimes[] = {
-        "%Y-%m-%dT%H:%M:%SZ",
-        "%Y-%m-%dT%H:%M:%S%Z",
-        "%Y-%m-%dT%H:%M:%S%z",
-        "%Y-%m-%d %H:%M:%SZ",
-        "%Y-%m-%d %H:%M:%S%Z",
-        "%Y-%m-%d %H:%M:%S%z"
-    };
-    char* datetimelocals[] = {
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%d %H:%M:%S"
-    };
-    char* datelocals[] = { "%Y-%m-%d" };
-    char* timelocals[] = { "%H:%M:%S" };
     while( has_token( tok ) )
     {
         FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
@@ -182,10 +147,252 @@ datetime_t* parse_datetime(
             ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) ) )
         {
             struct tm* time = calloc( 1, sizeof( struct tm ) );
-            PARSE_DT_FORMAT( datetimes, DATETIME )
-            PARSE_DT_FORMAT( datetimelocals, DATETIMELOCAL )
-            PARSE_DT_FORMAT( datelocals, DATELOCAL )
-            PARSE_DT_FORMAT( timelocals, TIMELOCAL )
+            char year   [ 5 ] = { 0 };
+            char mon    [ 3 ] = { 0 };
+            char mday   [ 3 ] = { 0 };
+            char hour   [ 3 ] = { 0 };
+            char min    [ 3 ] = { 0 };
+            char sec    [ 3 ] = { 0 };
+            char delim  [ 2 ] = { 0 };
+            char tz     [ 2 ] = { 0 };
+            char off_s  [ 2 ] = { 0 };
+            char off_h  [ 3 ] = { 0 };
+            char off_m  [ 3 ] = { 0 };
+
+            int t;
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c%2c:%2c",
+                        year, mon, mday, delim, hour, min, sec, off_s, off_h, off_m );
+            if( t==10 )
+            {
+                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
+                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
+                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
+                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
+                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
+                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
+                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
+                FAIL_BREAK( strlen( off_s )==1, "invalid offset sign\n" )
+                FAIL_BREAK( strlen( off_h )==2, "invalid offset hour\n" )
+                FAIL_BREAK( strlen( off_m )==2, "invalid offset minute\n" )
+                if( delim[ 0 ]==' ' )
+                {
+                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SS-HH:MM" ), "datetime has incorrect number of characters\n" )
+                }
+                else
+                {
+                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS-HH:MM" )+spaces ) ), "datetime has incorrect number of characters\n" )
+                }
+                char* end;
+                unsigned long num;
+                num = strtoul( year, &end, 10 );
+                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
+                time->tm_year = num-1900;
+                num = strtoul( mon, &end, 10 );
+                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
+                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
+                time->tm_mon = num-1;
+                num = strtoul( mday, &end, 10 );
+                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                time->tm_mday = num;
+                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
+                num = strtoul( hour, &end, 10 );
+                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
+                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
+                time->tm_hour = num;
+                num = strtoul( min, &end, 10 );
+                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
+                time->tm_min = num;
+                num = strtoul( sec, &end, 10 );
+                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
+                time->tm_sec = num;
+                num = strtoul( off_h, &end, 10 );
+                FAIL_BREAK( end==off_h+strlen( off_h ), "invalid offset hour\n" )
+                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid offset hour\n" )
+                time->tm_gmtoff = num*60*60;
+                num = strtoul( off_m, &end, 10 );
+                FAIL_BREAK( end==off_m+strlen( off_m ), "invalid offset minute\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid offset minute\n" )
+                time->tm_gmtoff += num;
+                FAIL_BREAK( ( 0==strcmp( off_s, "+" ) || 0==strcmp( off_s, "-" ) ), "invalid offset sign\n" )
+                if( 0==strcmp( off_s, "-" ) )
+                    time->tm_gmtoff *= -1;
+                dt = calloc( 1, sizeof( datetime_t ) );
+                char* format = "%Y-%m-%dT%H:%M:%S-HH:MM";
+                dt->format = calloc( 1, strlen( format )+1 );
+                int c = snprintf( dt->format, strlen( format )+1, "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s", off_s[ 0 ], off_h, off_m );
+                dt->type = DATETIME;
+                dt->dt = time;
+                return dt;
+            }
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c",
+                        year, mon, mday, delim, hour, min, sec, tz );
+            if( t==8 )
+            {
+                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
+                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
+                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
+                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
+                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
+                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
+                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
+                FAIL_BREAK( strlen( tz )==1, "invalid timezone\n" )
+                if( delim[ 0 ]==' ' )
+                {
+                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SSZ" ), "datetime has incorrect number of characters\n" )
+                }
+                else
+                {
+                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SSZ" )+spaces ) ), "datetime has incorrect number of characters\n" )
+                }
+                char* end;
+                unsigned long num;
+                num = strtoul( year, &end, 10 );
+                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
+                time->tm_year = num-1900;
+                num = strtoul( mon, &end, 10 );
+                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
+                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
+                time->tm_mon = num-1;
+                num = strtoul( mday, &end, 10 );
+                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                time->tm_mday = num;
+                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
+                num = strtoul( hour, &end, 10 );
+                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
+                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
+                time->tm_hour = num;
+                num = strtoul( min, &end, 10 );
+                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
+                time->tm_min = num;
+                num = strtoul( sec, &end, 10 );
+                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
+                time->tm_sec = num;
+                FAIL_BREAK( ( 0==strcmp( tz, "Z" ) || 0==strcmp( tz, "z" ) ), "invalid timezone\n" )
+                time->tm_zone = "UTC";
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" ) );
+                char* format = "%Y-%m-%dT%H:%M:%SZ";
+                dt->format = calloc( 1, strlen( format )+1 );
+                int c = snprintf( dt->format, strlen( format )+1, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
+                dt->type = DATETIME;
+                dt->dt = time;
+                return dt;
+            }
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c",
+                        year, mon, mday, delim, hour, min, sec );
+            if( t==7 )
+            {
+                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
+                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
+                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
+                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
+                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
+                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
+                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
+                if( delim[ 0 ]==' ' )
+                {
+                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SS" ), "datetime has incorrect number of characters\n" )
+                }
+                else
+                {
+                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS" )+spaces ) ), "datetime has incorrect number of characters\n" )
+                }
+                char* end;
+                unsigned long num;
+                num = strtoul( year, &end, 10 );
+                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
+                time->tm_year = num-1900;
+                num = strtoul( mon, &end, 10 );
+                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
+                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
+                time->tm_mon = num-1;
+                num = strtoul( mday, &end, 10 );
+                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                time->tm_mday = num;
+                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
+                num = strtoul( hour, &end, 10 );
+                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
+                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
+                time->tm_hour = num;
+                num = strtoul( min, &end, 10 );
+                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
+                time->tm_min = num;
+                num = strtoul( sec, &end, 10 );
+                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
+                time->tm_sec = num;
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" ) );
+                memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", strlen( "%Y-%m-%dT%H:%M:%S" ) );
+                dt->type = DATETIMELOCAL;
+                dt->dt = time;
+                return dt;
+            }
+            t = sscanf( value, "%4c-%2c-%2c",
+                        year, mon, mday );
+            if( t==3 )
+            {
+                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
+                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
+                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
+                FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DD" )+spaces ) ), "date has incorrect number of characters\n" )
+                char* end;
+                unsigned long num;
+                num = strtoul( year, &end, 10 );
+                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
+                time->tm_year = num-1900;
+                num = strtoul( mon, &end, 10 );
+                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
+                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
+                time->tm_mon = num-1;
+                num = strtoul( mday, &end, 10 );
+                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                time->tm_mday = num;
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->format = calloc( 1, strlen( "%Y-%m-%d" ) );
+                memcpy( dt->format, "%Y-%m-%d", strlen( "%Y-%m-%d" ) );
+                dt->type = DATELOCAL;
+                dt->dt = time;
+                return dt;
+            }
+            t = sscanf( value, "%2c:%2c:%2c",
+                        hour, min, sec );
+            if( t==3 )
+            {
+                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
+                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
+                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
+                FAIL_BREAK( ( strlen( value )==( strlen( "HH:MM:SS" )+spaces ) ), "time has incorrect number of characters\n" )
+                char* end;
+                unsigned long num;
+                num = strtoul( hour, &end, 10 );
+                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
+                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
+                time->tm_hour = num;
+                num = strtoul( min, &end, 10 );
+                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
+                time->tm_min = num;
+                num = strtoul( sec, &end, 10 );
+                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
+                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
+                time->tm_sec = num;
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->format = calloc( 1, strlen( "%H:%M:%S" ) );
+                memcpy( dt->format, "%H:%M:%S", strlen( "%H:%M:%S" ) );
+                dt->type = TIMELOCAL;
+                dt->dt = time;
+                return dt;
+            }
             LOG_ERR_BREAK( "could not parse %s as datetime\n", value )
         }
         else
@@ -695,7 +902,7 @@ value_t* parse_value(
         }
         else if( is_basicstringstart( get_token( tok ) ) )
         {
-            VALUE_INIT( MAX_STRING_LENGTH )
+            char value[ MAX_STRING_LENGTH ] = { 0 };
             char* s;
             next_token( tok );
             if( has_token( tok ) && is_basicstringstart( get_token( tok ) ) )
@@ -719,7 +926,7 @@ value_t* parse_value(
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
-            VALUE_INIT( MAX_STRING_LENGTH )
+            char value[ MAX_STRING_LENGTH ] = { 0 };
             char* s;
             next_token( tok );
             if( has_token( tok ) && is_literalstringstart( get_token( tok ) ) )
@@ -743,7 +950,7 @@ value_t* parse_value(
         }
         else if( is_numberstart( get_token( tok ) ) )
         {
-            VALUE_INIT( MAX_STRING_LENGTH )
+            char value[ MAX_STRING_LENGTH ] = { 0 };
             // try parsing date time
             bool a = next_token( tok );
             bool b = next_token( tok );
