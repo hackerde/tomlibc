@@ -39,7 +39,7 @@ $ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
 Running tomlibc tests
 ==================
 ...
-[TEST REPORT]: Passed 53 tests | Failed 2 tests | Percent: 96.36%
+[TEST REPORT]: Passed 54 tests | Failed 1 tests | Percent: 98.18%
 ```
 
 **toml-test**
@@ -48,7 +48,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[TEST REPORT]: Passed 462 tests | Failed 76 tests | Percent: 85.87%
+[TEST REPORT]: Passed 499 tests | Failed 39 tests | Percent: 92.75%
 ```
 
 ## Limitations
@@ -60,4 +60,3 @@ Aside from the usual bug fixes, the following are *major* features that will be 
 There are also a few other *minor* issues that will eventually be addressed as well:
 
 - [ ] print line and column correctly on error
-- [ ] validate date and time

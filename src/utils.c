@@ -166,3 +166,52 @@ bool is_arraysep( char c )
 {
     return ( c==',' );
 }
+
+bool is_date( int year, int month, int day )
+{
+    switch ( month )
+    {
+        // January
+        case 0:
+            return ( day>=1 && day<=31 );
+        // February
+        case 1:
+            return ( ( day>=1 && day<=28 ) ||
+                     ( day==29 && year%4==0 && year%100!=0 ) ||
+                     ( day==29 && year%4==0 && year%100==0 && year%400==0 )
+            );
+        // March
+        case 2:
+            return ( day>=1 && day<=31 );
+        // April
+        case 3:
+            return ( day>=1 && day<=30 );
+        // May
+        case 4:
+            return ( day>=1 && day<=31 );
+        // June
+        case 5:
+            return ( day>=1 && day<=30 );
+        // July
+        case 6:
+            return ( day>=1 && day<=31 );
+        // August
+        case 7:
+            return ( day>=1 && day<=31 );
+        // September
+        case 8:
+            return ( day>=1 && day<=30 );
+        // October
+        case 9:
+            return ( day>=1 && day<=31 );
+        // November
+        case 10:
+            return ( day>=1 && day<=30 );
+        // December
+        case 11:
+            return ( day>=1 && day<=31 );
+        default:
+            false;
+    }
+    return false;
+}
