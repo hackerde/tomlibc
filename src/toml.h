@@ -80,9 +80,11 @@ key_t* toml_load( const char* file )
         key = parse_keyval( tok, key, root );
         FAIL_RETURN( key, "Encountered an error while parsing %s\n"
                           "At line %d column %d\n",
-                          file, tok->line, tok->col
+                          file, tok->line+1, tok->col
         )
     }
+
+    delete_tokenizer( tok );
 
     return root;
 }

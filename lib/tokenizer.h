@@ -3,6 +3,8 @@
 
 #include "models.h"
 
+#define MAX_NUM_LINES 65536
+
 /*
     Struct `tokenizer` handles the input stream
     by reading and returning tokens for the parser.
@@ -33,6 +35,8 @@ struct tokenizer {
     int     line;
     /* column number in the stream */
     int     col;
+    /* array where index=line and lines[index]=length */
+    int     lines[ MAX_NUM_LINES ];
 };
 
 /*
@@ -86,5 +90,7 @@ bool    has_token              ( tokenizer_t* tok );
 char    get_token              ( tokenizer_t* tok );
 char    get_prev               ( tokenizer_t* tok );
 char    get_prev_prev          ( tokenizer_t* tok );
+
+void    delete_tokenizer       ( tokenizer_t* tok );
 
 #endif

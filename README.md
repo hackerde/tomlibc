@@ -53,10 +53,4 @@ Running toml-test tests
 
 ## Limitations
 
-Aside from the usual bug fixes, the following are *major* features that will be added soon:
-
-- [ ] millisecond precision
-
-There are also a few other *minor* issues that will eventually be addressed as well:
-
-- [ ] print line and column correctly on error
+Aside from the usual bug fixes, this TOML parser does not support millisecond precision.
