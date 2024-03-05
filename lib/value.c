@@ -9,7 +9,7 @@ value_t* new_string( const char* s )
 {
     value_t* v = calloc( 1, sizeof( value_t ) );
     v->type = STRING;
-    v->data = calloc( 1, strlen( s ) );
+    v->data = calloc( 1, strlen( s )+1 );
     memcpy( v->data, s, strlen( s ) );
     return v;
 }

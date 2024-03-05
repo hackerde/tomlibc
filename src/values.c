@@ -30,6 +30,16 @@ char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
                 if( is_basicstringstart( get_token( tok ) ) && is_basicstringstart( get_prev( tok ) ) )
                 {
                     next_token( tok );
+                    if( is_basicstringstart( get_token( tok ) ) )
+                    {
+                        value[ idx++ ] = '"';
+                        next_token( tok );
+                    }
+                    if( is_basicstringstart( get_token( tok ) ) )
+                    {
+                        value[ idx++ ] = '"';
+                        next_token( tok );
+                    }
                     return value;
                 }
                 else
@@ -107,6 +117,16 @@ char* parse_literalstring( tokenizer_t* tok, char* value, bool multi )
                 if( is_literalstringstart( get_token( tok ) ) && is_literalstringstart( get_prev( tok ) ) )
                 {
                     next_token( tok );
+                    if( is_literalstringstart( get_token( tok ) ) )
+                    {
+                        value[ idx++ ] = '\'';
+                        next_token( tok );
+                    }
+                    if( is_literalstringstart( get_token( tok ) ) )
+                    {
+                        value[ idx++ ] = '\'';
+                        next_token( tok );
+                    }
                     return value;
                 }
                 else
@@ -193,7 +213,7 @@ datetime_t* parse_datetime(
                 time->tm_mon = num-1;
                 num = strtoul( mday, &end, 10 );
                 FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
                 time->tm_mday = num;
                 FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
                 num = strtoul( hour, &end, 10 );
@@ -258,7 +278,7 @@ datetime_t* parse_datetime(
                 time->tm_mon = num-1;
                 num = strtoul( mday, &end, 10 );
                 FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day %d %d %lu\n", time->tm_year, time->tm_mon, num )
                 time->tm_mday = num;
                 FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
                 num = strtoul( hour, &end, 10 );
@@ -314,7 +334,7 @@ datetime_t* parse_datetime(
                 time->tm_mon = num-1;
                 num = strtoul( mday, &end, 10 );
                 FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
                 time->tm_mday = num;
                 FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
                 num = strtoul( hour, &end, 10 );
@@ -355,7 +375,7 @@ datetime_t* parse_datetime(
                 time->tm_mon = num-1;
                 num = strtoul( mday, &end, 10 );
                 FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year, time->tm_mon, num ), "invalid day\n" )
+                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
                 time->tm_mday = num;
                 dt = calloc( 1, sizeof( datetime_t ) );
                 dt->format = calloc( 1, strlen( "%Y-%m-%d" ) );
@@ -962,6 +982,8 @@ value_t* parse_value(
                 value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                 return v;
             }
+            else if( !is_digit( get_prev( tok ) ) || !is_digit( get_token( tok ) ) )
+                backtrack( tok, a+b );
             else
             {
                 bool c = next_token( tok );
