@@ -12,9 +12,10 @@ tokenizer_t* new_tokenizer( FILE* input )
     tok->token = '\0';
     tok->prev = '\0';
     tok->prev_prev = '\0';
-    tok->line = 1;
+    tok->line = 0;
     tok->col = 0;
     tok->has_token = true;
+    memset( tok->lines, 0, MAX_NUM_LINES );
     return tok;
 }
 
@@ -36,6 +37,8 @@ size_t next_token( tokenizer_t* tok )
             tok->newline = true;
         if( tok->prev=='\n' )
         {
+            if( tok->line<MAX_NUM_LINES )
+                tok->lines[ tok->line ] = tok->col;
             tok->line++;
             tok->col = 0;
         }
@@ -62,14 +65,22 @@ void backtrack(
     int             count
 )
 {
-    if( count>0 && tok->cursor>count+2 )
+    int pre_count = count+2;
+    if( count>0 && tok->cursor>pre_count )
     {
-        tok->cursor -= (count+2);
+        tok->cursor -= pre_count;
         tok->has_token = true;
+        int col = tok->col;
+        while( tok->line>=0 && pre_count>col )
+        {
+            pre_count -= col;
+            col = tok->lines[ --tok->line ];
+        }
+        tok->col = col-pre_count;
+        if( tok->line<0 ) tok->line = 0;
+        if( tok->col<0 ) tok->col = 0;
         next_token( tok );
         next_token( tok );
-        // incorrect
-        tok->col -= count;
     }
     else
         LOG_ERR( "not enough characters to backtrack %d\n", count );
@@ -93,4 +104,9 @@ char get_prev( tokenizer_t* tok )
 char get_prev_prev( tokenizer_t* tok )
 {
     return tok->prev_prev;
+}
+
+void delete_tokenizer( tokenizer_t* tok )
+{
+    free( tok );
 }
