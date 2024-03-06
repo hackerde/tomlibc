@@ -19,7 +19,7 @@ tokenizer_t* new_tokenizer( FILE* input )
     return tok;
 }
 
-size_t next_token( tokenizer_t* tok )
+int next_token( tokenizer_t* tok )
 {
     fseek( tok->stream, tok->cursor, SEEK_SET );
     if( tok->prev!='\0' )

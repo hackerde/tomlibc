@@ -1,7 +1,9 @@
-#ifndef __LIB_TOKENIZER_H__
-#define __LIB_TOKENIZER_H__
+#ifndef __TOMLIBC_TOKENIZER_H__
+#define __TOMLIBC_TOKENIZER_H__
 
 #include "models.h"
+
+#include <stdio.h>
 
 #define MAX_NUM_LINES 65536
 
@@ -56,7 +58,7 @@ tokenizer_t* new_tokenizer     ( FILE* filename );
     a token, i.e. we have not reached EOF, returns 1, else
     returns 0.
 */
-size_t  next_token             ( tokenizer_t* tok );
+int     next_token             ( tokenizer_t* tok );
 
 /*
     Function `backtrack` is used to move the `cursor` back in

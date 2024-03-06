@@ -1,7 +1,7 @@
-#ifndef __SRC_KEYS_H__
-#define __SRC_KEYS_H__
+#ifndef __TOMLIBC_PARSE_KEYS_H__
+#define __TOMLIBC_PARSE_KEYS_H__
 
-#include "../lib/tokenizer.h"
+#include "lib/tokenizer.h"
 
 /*
     Functions `parse_barekey`, `parse_basicquotedkey`
@@ -18,23 +18,25 @@
     argument determines which character marks the termination
     of parsing.
 */
-key_t* parse_barekey(
+toml_key_t* parse_barekey(
     tokenizer_t*    tok,
     char            end,
-    key_type_t      branch,
-    key_type_t      leaf
+    toml_key_type_t branch,
+    toml_key_type_t leaf
 );
-key_t* parse_basicquotedkey(
+
+toml_key_t* parse_basicquotedkey(
     tokenizer_t*    tok,
     char            end,
-    key_type_t      branch,
-    key_type_t      leaf
+    toml_key_type_t branch,
+    toml_key_type_t leaf
 );
-key_t* parse_literalquotedkey(
+
+toml_key_t* parse_literalquotedkey(
     tokenizer_t*    tok,
     char            end,
-    key_type_t      branch,
-    key_type_t      leaf
+    toml_key_type_t branch,
+    toml_key_type_t leaf
 );
 
 /*
@@ -48,19 +50,21 @@ key_t* parse_literalquotedkey(
     a delimiter like `.` or `=`. Returns NULL on
     parsing failure.
 */
-key_t* parse_key(
+toml_key_t* parse_key(
     tokenizer_t*    tok,
-    key_t*          key,
+    toml_key_t*     key,
     bool            expecting
 );
-key_t* parse_table(
+
+toml_key_t* parse_table(
     tokenizer_t*    tok,
-    key_t*          key,
+    toml_key_t*     key,
     bool            expecting
 );
-key_t* parse_arraytable(
+
+toml_key_t* parse_arraytable(
     tokenizer_t*    tok,
-    key_t*          key,
+    toml_key_t*     key,
     bool            expecting
 );
 
@@ -77,10 +81,10 @@ key_t* parse_arraytable(
     pointer to the last table or arraytable it parsed
     and returns `key` if neither.
 */
-key_t* parse_keyval(
+toml_key_t* parse_keyval(
     tokenizer_t*    tok,
-    key_t*          key,
-    key_t*          root
+    toml_key_t*     key,
+    toml_key_t*     root
 );
 
 #endif

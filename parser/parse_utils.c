@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "parse_utils.h"
 
 #include <string.h>
 
@@ -134,7 +134,7 @@ bool is_control_literal( char c )
 
 bool is_numberend( char c, const char* end )
 {
-    for( size_t i=0; i<strlen( end ); i++ )
+    for( int i=0; i<strlen( end ); i++ )
     {
         if ( c==end[ i ] )
             return true;
@@ -167,7 +167,11 @@ bool is_arraysep( char c )
     return ( c==',' );
 }
 
-bool is_date( int year, int month, int day )
+bool is_date(
+    int year,
+    int month,
+    int day
+)
 {
     switch ( month )
     {

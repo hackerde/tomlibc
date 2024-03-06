@@ -1,16 +1,20 @@
-#include "keys.h"
-#include "values.h"
-#include "utils.h"
+#include "parse_keys.h"
+#include "parse_values.h"
+#include "parse_utils.h"
 
-#include "../lib/key.h"
-#include "../lib/value.h"
-#include "../lib/utils.h"
+#include "lib/key.h"
+#include "lib/value.h"
+#include "lib/utils.h"
 
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
 
-char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
+char* parse_basicstring(
+    tokenizer_t*    tok,
+    char*           value,
+    bool            multi
+)
 {
     size_t idx = 0;
     while( has_token( tok ) )
@@ -97,7 +101,11 @@ char* parse_basicstring( tokenizer_t* tok, char* value, bool multi )
     return NULL;
 }
 
-char* parse_literalstring( tokenizer_t* tok, char* value, bool multi )
+char* parse_literalstring(
+    tokenizer_t*    tok,
+    char*           value,
+    bool            multi
+)
 {
     size_t idx = 0;
     while( has_token( tok ) )
@@ -426,7 +434,10 @@ datetime_t* parse_datetime(
     return NULL;
 }
 
-double parse_inf_nan( tokenizer_t* tok, bool negative )
+double parse_inf_nan(
+    tokenizer_t*    tok,
+    bool            negative
+)
 {
     double ret = 0.0;
     if( get_token( tok )=='i' )
@@ -457,9 +468,12 @@ double parse_inf_nan( tokenizer_t* tok, bool negative )
     return ret;
 }
 
-value_t* parse_array( tokenizer_t* tok, value_t* arr )
+toml_value_t* parse_array(
+    tokenizer_t*    tok,
+    toml_value_t*   arr
+)
 {
-    size_t idx = 0;
+    int idx = 0;
     bool sep = true;
     while( has_token( tok ) )
     {
@@ -487,7 +501,7 @@ value_t* parse_array( tokenizer_t* tok, value_t* arr )
         else
         {
             FAIL_BREAK( sep, "expected , between elements\n" )
-            value_t* v = parse_value( tok, "#,] \n" );
+            toml_value_t* v = parse_value( tok, "#,] \n" );
             FAIL_BREAK( v, "could not parse value\n" )
             arr->arr[ idx++ ] = v;
             sep = false;
@@ -526,9 +540,9 @@ double parse_boolean( tokenizer_t* tok )
     return ret;
 }
 
-key_t* parse_inlinetable( tokenizer_t* tok )
+toml_key_t* parse_inlinetable( tokenizer_t* tok )
 {
-    key_t* keys = new_key( TABLE );
+    toml_key_t* keys = new_key( TABLE );
     bool sep = true;
     bool first = true;
     while( has_token( tok ) )
@@ -552,18 +566,18 @@ key_t* parse_inlinetable( tokenizer_t* tok )
         else
         {
             FAIL_BREAK( sep, "expected , between elements\n" )
-            key_t* k = parse_key( tok, keys, true );
+            toml_key_t* k = parse_key( tok, keys, true );
             FAIL_BREAK( k, "failed to parse key\n" )
-            value_t* v = parse_value( tok, ", }" );
+            toml_value_t* v = parse_value( tok, ", }" );
             FAIL_BREAK( v, "failed to parse value\n" )
             // refer to inline table comment in `keys.c`
             if( v->type==INLINETABLE )
             {
-                key_t* h = ( key_t * )( v->data );
+                toml_key_t* h = ( toml_key_t * )( v->data );
                 k->type = KEY;
-                for( key_t** iter=h->subkeys; iter<h->last; iter++ )
+                for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
                 {
-                    key_t* e = add_subkey( k, *iter );
+                    toml_key_t* e = add_subkey( k, *iter );
                     FAIL_RETURN( e, "could not add inline table key %s\n", ( *iter )->id )
                 }
                 k->type = KEYLEAF;
@@ -619,7 +633,10 @@ bool parse_newline( tokenizer_t* tok )
     return false;
 }
 
-int parse_unicode( tokenizer_t* tok, char* escaped )
+int parse_unicode(
+    tokenizer_t*    tok,
+    char*           escaped
+)
 {
     size_t digits = 0;
     char code[ 9 ] = { 0 };
@@ -681,7 +698,10 @@ int parse_unicode( tokenizer_t* tok, char* escaped )
 }
 
 // TODO: unused
-int parse_escape( tokenizer_t* tok, char* escaped )
+int parse_escape(
+    tokenizer_t*    tok,
+    char*           escaped
+)
 {
     switch ( get_token( tok ) )
     {
@@ -907,7 +927,7 @@ number_t* parse_number(
     return n;
 }
 
-value_t* parse_value(
+toml_value_t* parse_value(
     tokenizer_t*    tok,
     const char*     num_end
 )
@@ -941,7 +961,7 @@ value_t* parse_value(
             else
                 s = parse_basicstring( tok, value, false );
             FAIL_BREAK( s, "could not parse basic string\n" )
-            value_t* v = new_string( value );
+            toml_value_t* v = new_string( value );
             return v;
         }
         else if( is_literalstringstart( get_token( tok ) ) )
@@ -965,7 +985,7 @@ value_t* parse_value(
             else
                 s = parse_literalstring( tok, value, false );
             FAIL_BREAK( s, "could not parse literal string\n" )
-            value_t* v = new_string( value );
+            toml_value_t* v = new_string( value );
             return v;
         }
         else if( is_numberstart( get_token( tok ) ) )
@@ -979,7 +999,7 @@ value_t* parse_value(
                 backtrack( tok, a+b );
                 datetime_t* dt = parse_datetime( tok, value, num_end );
                 FAIL_BREAK( dt, "could not parse time\n" )
-                value_t* v = new_datetime( dt->dt, dt->type, dt->format );
+                toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                 return v;
             }
             else if( !is_digit( get_prev( tok ) ) || !is_digit( get_token( tok ) ) )
@@ -993,7 +1013,7 @@ value_t* parse_value(
                     backtrack( tok, a+b+c+d );
                     datetime_t* dt = parse_datetime( tok, value, num_end );
                     FAIL_BREAK( dt, "could not parse datetime\n" )
-                    value_t* v = new_datetime( dt->dt, dt->type, dt->format );
+                    toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                     return v;
                 }
                 else
@@ -1002,12 +1022,12 @@ value_t* parse_value(
             double* d = calloc( 1, sizeof( double ) );
             number_t* n = parse_number( tok, value, d, num_end );
             FAIL_BREAK( n, "could not parse number\n" )
-            value_t* v = new_number( d, n->type, n->precision, n->scientific );
+            toml_value_t* v = new_number( d, n->type, n->precision, n->scientific );
             return v;
         }
         else if( is_arraystart( get_token( tok ) ) )
         {
-            value_t* v = new_array();
+            toml_value_t* v = new_array();
             next_token( tok );
             v = parse_array( tok, v );
             FAIL_BREAK( v, "could not parse array\n" )
@@ -1016,23 +1036,23 @@ value_t* parse_value(
         else if( is_inlinetablestart( get_token( tok ) ) )
         {
             next_token( tok );
-            key_t* keys = parse_inlinetable( tok );
+            toml_key_t* keys = parse_inlinetable( tok );
             FAIL_BREAK( keys, "could not parse inline table\n" )
-            value_t* v = new_inline_table( keys );
+            toml_value_t* v = new_inline_table( keys );
             return v;
         }
         else if( get_token( tok )=='t' || get_token( tok )=='f' )
         {
             double b = parse_boolean( tok );
             FAIL_BREAK( ( b==1 || b==0 ), "expecting true or false but could not parse\n" )
-            value_t* v = new_number( &b, BOOL, 0, false );
+            toml_value_t* v = new_number( &b, BOOL, 0, false );
             return v;
         }
         else if( get_token( tok )=='i' || get_token( tok )=='n' )
         {
             double f = parse_inf_nan( tok, false );
             FAIL_BREAK( f, "expecting inf or nan but could not parse\n" )
-            value_t* v = new_number( &f, FLOAT, 0, false );
+            toml_value_t* v = new_number( &f, FLOAT, 0, false );
             return v;
         }
         else

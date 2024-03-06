@@ -1,5 +1,5 @@
-#ifndef __LIB_VALUE_H__
-#define __LIB_VALUE_H__
+#ifndef __TOMLIBC_VALUE_H__
+#define __TOMLIBC_VALUE_H__
 
 #include "models.h"
 
@@ -9,14 +9,14 @@
     Function `delete_value` frees up all the memory
     that is associated with value `v`.
 */
-void        delete_value        ( value_t* v );
+void            delete_value        ( toml_value_t* v );
 
 /*
     Function `new_array` allocates a buffer for an
-    array of `value_t` and returns a pointer to it.
+    array of `toml_value_t` and returns a pointer to it.
     This is stored in the `arr` attribute.
 */
-value_t*    new_array           ( );
+toml_value_t*   new_array           ( );
 
 /*
     Function `new_inline_table` takes a key `k` as
@@ -27,7 +27,7 @@ value_t*    new_array           ( );
     returns a pointer to the newly allocated value.
     The `data` attribute contains the newly created key.
 */
-value_t*    new_inline_table    ( key_t* k );
+toml_value_t*   new_inline_table    ( toml_key_t* k );
 
 /*
     Functions `new_string`, `new_datetime` and `new_number`
@@ -37,17 +37,19 @@ value_t*    new_inline_table    ( key_t* k );
     the other functions, it returns a pointer to the newly
     allocated value.
 */
-value_t*    new_string          ( const char* s );
-value_t*    new_datetime(
-    struct tm*      dt,
-    value_type_t    type,
-    char*           format
+toml_value_t*    new_string          ( const char* s );
+
+toml_value_t*    new_datetime(
+    struct tm*          dt,
+    toml_value_type_t   type,
+    char*               format
 );
-value_t*    new_number(
-    double*         d,
-    value_type_t    type,
-    size_t          precision,
-    bool            scientific
+
+toml_value_t*    new_number(
+    double*             d,
+    toml_value_type_t   type,
+    size_t              precision,
+    bool                scientific
 );
 
 #endif
