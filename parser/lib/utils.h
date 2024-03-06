@@ -1,5 +1,5 @@
-#ifndef __LIB_UTILS_H__
-#define __LIB_UTILS_H__
+#ifndef __TOMLIBC_UTILS_H__
+#define __TOMLIBC_UTILS_H__
 
 #include <stdio.h>
 
@@ -10,9 +10,12 @@
     was raised in.
 */
 #define LOG_ERR( ... )                      \
-    { fprintf( stderr, "%s:%d [%s]: ",      \
-    __FILE__, __LINE__, __func__ );         \
-    fprintf( stderr, __VA_ARGS__ ); }
+    do                                      \
+    {                                       \
+        fprintf( stderr, "%s:%d [%s]: ",    \
+        __FILE__, __LINE__, __func__ );     \
+        fprintf( stderr, __VA_ARGS__ );     \
+    } while( 0 )
 
 /*
     Macro `LOG_ERR_BREAK` calls `LOG_ERR`

@@ -1,7 +1,7 @@
-#ifndef __SRC_UTILS_H__
-#define __SRC_UTILS_H__
+#ifndef __TOMLIBC_PARSE_UTILS_H__
+#define __TOMLIBC_PARSE_UTILS_H__
 
-#include "../lib/models.h"
+#include <stdbool.h>
 
 /*
     All of these are utility functions to

@@ -9,7 +9,7 @@ Written to be compliant with [TOML v1.0.0](https://toml.io/en/v1.0.0).
 ## Usage
 
 A toml file [`sample.toml`](sample.toml) is provided along with a sample C program [`main.c`](main.c).
-The only header that you need to include is `src/toml.h`.
+The only header that you need to include is `tomlib.h`.
 An example [Makefile](Makefile) is also provided.
 
 ### Building
@@ -24,8 +24,9 @@ $ ./main
 The test suite also includes the [official compliance tests](https://github.com/toml-lang/toml-test).
 
 ```bash
-$ ./tests/run_tests.sh          # this runs the tomlibc tests
-$ ./tests/run_toml_tests.sh     # this runs the toml-test suite tests
+# specify -r to show regressions
+$ ./tests/run_tests.sh [-r]         # this runs the tomlibc tests
+$ ./tests/run_toml_tests.sh [-r]    # this runs the toml-test suite tests
 ```
 
 ### Current Status
@@ -53,4 +54,4 @@ Running toml-test tests
 
 ## Limitations
 
-Aside from the usual bug fixes, this TOML parser does not support millisecond precision.
+Aside from the usual bug fixes, this TOML parser currently does not support millisecond precision.

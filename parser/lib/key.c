@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-key_t* new_key( key_type_t type )
+toml_key_t* new_key( toml_key_type_t type )
 {
-    key_t* k = calloc( 1, sizeof( key_t ) );
+    toml_key_t* k = calloc( 1, sizeof( toml_key_t ) );
     k->type = type;
     k->last = NULL;
     k->value = NULL;
@@ -16,12 +16,12 @@ key_t* new_key( key_type_t type )
     return k;
 }
 
-key_t* has_subkey(
-    key_t* key,
-    key_t* subkey
+toml_key_t* has_subkey(
+    toml_key_t* key,
+    toml_key_t* subkey
 )
 {
-    for( key_t** iter=key->subkeys; iter<key->last; iter++ )
+    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
     {
         if ( strcmp( ( *iter )->id, subkey->id )==0 )
             return *iter;
@@ -29,9 +29,9 @@ key_t* has_subkey(
     return NULL;
 }
 
-key_t* add_subkey(
-    key_t* key,
-    key_t* subkey
+toml_key_t* add_subkey(
+    toml_key_t* key,
+    toml_key_t* subkey
 )
 {
     if( key->last==NULL )
@@ -40,7 +40,7 @@ key_t* add_subkey(
         memset( key->subkeys, 0, MAX_NUM_SUBKEYS );
         key->last = key->subkeys;
     }
-    key_t* s = has_subkey( key, subkey );
+    toml_key_t* s = has_subkey( key, subkey );
     if( s )
     {
         if( compatible_keys( s->type, subkey->type ) )
@@ -70,7 +70,7 @@ key_t* add_subkey(
             // and re-defining an ARRAYTABLE means adding another map
             // of key-value to the list, we use the `value->arr`
             // attribute of the key to store each map of key-values
-            key_t* a = add_subkey( key->value->arr[key->idx]->data, subkey );
+            toml_key_t* a = add_subkey( key->value->arr[key->idx]->data, subkey );
             return a;
         }
         else
@@ -85,26 +85,9 @@ key_t* add_subkey(
     return NULL;
 }
 
-key_t* get_key(
-    key_t*      key,
-    const char* id
-)
-{
-    if( key==NULL )
-        return NULL;
-    if( strcmp( key->id, id )==0 )
-        return key;
-    for( key_t** iter=key->subkeys; iter<key->last; iter++ )
-    {
-        if( strcmp( ( *iter )->id, id )==0 )
-            return *iter;
-    }
-    LOG_ERR_RETURN( "node %s does not exist in subkeys of node %s", id, key->id );
-}
-
 bool compatible_keys(
-    key_type_t existing,
-    key_type_t current
+    toml_key_type_t existing,
+    toml_key_type_t current
 )
 {
     // re-definition rules
@@ -136,12 +119,12 @@ bool compatible_keys(
     return false;
 }
 
-void delete_key( key_t* key )
+void delete_key( toml_key_t* key )
 {
     if( !key ) return;
     if( key->last )
     {
-        for( key_t** iter=key->subkeys; iter<key->last; iter++ )
+        for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
             delete_key( *iter );
     }
     if( key->value )

@@ -1,7 +1,7 @@
-#ifndef __SRC_VALUES_H__
-#define __SRC_VALUES_H__
+#ifndef __TOMLIBC_PARSE_VALUES_H__
+#define __TOMLIBC_PARSE_VALUES_H__
 
-#include "../lib/tokenizer.h"
+#include "lib/tokenizer.h"
 
 /*
     Struct `number` creates a generic type
@@ -12,9 +12,9 @@
 typedef struct number number_t;
 struct number
 {
-    value_type_t    type;
-    size_t          precision;
-    bool            scientific;
+    toml_value_type_t   type;
+    int                 precision;
+    bool                scientific;
 };
 
 /*
@@ -26,9 +26,9 @@ struct number
 typedef struct datetime datetime_t;
 struct datetime
 {
-    struct tm*      dt;
-    value_type_t    type;
-    char*           format;
+    struct tm*          dt;
+    toml_value_type_t   type;
+    char*               format;
 };
 
 /*
@@ -39,44 +39,66 @@ struct datetime
     in pre-allocated buffers. Arrays repeatedly parse values.
     Inline tables repeatedly parse key-value pairs. Everything
     returns a pointer to what it parsed and NULL on parsing
-    failure. `parse_comment` and `parse_newline` are the
-    only exceptions that do not return anything.
+    failure. `parse_comment` returns true if a valid comment
+    was parsed and `parse_newline` returns true if a newline
+    was successfully parsed.
 */
-double      parse_inf_nan       ( tokenizer_t* tok, bool negative );
-value_t*    parse_array         ( tokenizer_t* tok, value_t* arr );
-double      parse_boolean       ( tokenizer_t* tok );
-key_t*      parse_inlinetable   ( tokenizer_t* tok );
 bool        parse_comment       ( tokenizer_t* tok );
 void        parse_whitespace    ( tokenizer_t* tok );
 bool        parse_newline       ( tokenizer_t* tok );
-int         parse_escape        ( tokenizer_t* tok, char* escaped );
-int         parse_unicode       ( tokenizer_t* tok, char* escaped );
+double      parse_boolean       ( tokenizer_t* tok );
+toml_key_t* parse_inlinetable   ( tokenizer_t* tok );
+
+int parse_escape(
+    tokenizer_t*    tok,
+    char*           escaped
+);
+
+int parse_unicode(
+    tokenizer_t*    tok,
+    char*           escaped
+);
+
 char* parse_basicstring(
     tokenizer_t*    tok,
     char*           value,
     bool            multi
 );
+
 char* parse_literalstring(
     tokenizer_t*    tok,
     char*           value,
     bool            multi
 );
-datetime_t* parse_datetime(
+
+double parse_inf_nan(
     tokenizer_t*    tok,
-    char*           value,
-    const char*     num_end
+    bool            negative
 );
+
 double parse_base_uint(
     tokenizer_t*    tok,
     int             base,
     char*           value,
     const char*     num_end
 );
+
 number_t* parse_number(
     tokenizer_t*    tok,
     char*           value,
     double*         d,
     const char*     num_end
+);
+
+datetime_t* parse_datetime(
+    tokenizer_t*    tok,
+    char*           value,
+    const char*     num_end
+);
+
+toml_value_t* parse_array(
+    tokenizer_t*    tok,
+    toml_value_t*   arr
 );
 
 /*
@@ -90,7 +112,7 @@ number_t* parse_number(
     allows it to be used anywhere a value needs to be
     parsed.
 */
-value_t* parse_value(
+toml_value_t* parse_value(
     tokenizer_t*    tok,
     const char*     num_end
 );

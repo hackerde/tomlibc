@@ -1,64 +1,54 @@
-#ifndef __SRC_TOML_H__
-#define __SRC_TOML_H__
+#include "tomlib.h"
 
-#include "../lib/key.h"
-#include "../lib/value.h"
-#include "../lib/utils.h"
-#include "keys.h"
-#include "values.h"
+#include "parser/lib/tokenizer.h"
+#include "parser/lib/utils.h"
+#include "parser/lib/key.h"
 
+#include "parser/parse_keys.h"
+
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 
-#define ESCAPE( C )         \
-    if( C=='\b' )           \
-    {                       \
-        printf( "\\b" );    \
-        continue;           \
-    }                       \
-    if( C=='\n' )           \
-    {                       \
-        printf( "\\n" );    \
-        continue;           \
-    }                       \
-    if( C=='\r' )           \
-    {                       \
-        printf( "\\r" );    \
-        continue;           \
-    }                       \
-    if( C=='\t' )           \
-    {                       \
-        printf( "\\t" );    \
-        continue;           \
-    }                       \
-    if( C=='\f' )           \
-    {                       \
-        printf( "\\f" );    \
-        continue;           \
-    }                       \
-    if( C=='\\' )           \
-    {                       \
-        printf( "\\\\" );   \
-        continue;           \
-    }                       \
-    if( C=='\"' )           \
-    {                       \
-        printf( "\\\"" );   \
-        continue;           \
-    }
-
-/*
-    Function `toml_load` loads a TOML from either
-    a file or from stdin if `file` is NULL. It
-    initializes the tokenizer, and reads the input
-    stream until we reach an EOF. Upon success, it
-    returns a pointer to the `root` key and NULL on
-    failure.
-*/
-key_t* toml_load( const char* file )
+static inline void string_dump( const char* s )
 {
-    key_t* root = new_key( TABLE );
-    memcpy( root->id, "root", 5 );
+    for( const char* c=s; *c!='\0'; c++ )
+    {
+        switch ( *c )
+        {
+            case '\b':
+                printf( "\\b" );
+                continue;
+            case '\n':
+                printf( "\\n" );
+                continue;
+            case '\r':
+                printf( "\\r" );
+                continue;
+            case '\t':
+                printf( "\\t" );
+                continue;
+            case '\f':
+                printf( "\\f" );
+                continue;
+            case '\\':
+                printf( "\\\\" );
+                continue;
+            case '"':
+                printf( "\\\"" );
+                continue;
+            default:
+                break;
+        }
+        printf( "%c", *c );
+    }
+}
+
+toml_key_t* toml_load( const char* file )
+{
+    toml_key_t* root = new_key( TABLE );
+    memcpy( root->id, "root", strlen( "root" ) );
 
     FILE* stream;
     if( file )
@@ -74,7 +64,7 @@ key_t* toml_load( const char* file )
     tokenizer_t* tok = new_tokenizer( stream );
     next_token( tok );
 
-    key_t* key = root;
+    toml_key_t* key = root;
     while( has_token( tok )!=0 )
     {
         key = parse_keyval( tok, key, root );
@@ -89,40 +79,23 @@ key_t* toml_load( const char* file )
     return root;
 }
 
-/*
-    Function `dump_key`, `dump_value` and
-    `dump_toml` are functions to print out the
-    TOML data in a JSON format for compliance testing.
-*/
-void dump_key   ( key_t* k );
-void dump_value ( value_t* v );
-void dump_toml  ( key_t* root );
-
-void dump_key( key_t* k )
+void toml_key_dump( toml_key_t* k )
 {
     if( k->type==KEYLEAF && k->value!=NULL && k->value->type!=INLINETABLE )
     {
         printf( "\"" );
-        for( char* c=k->id; *c!= '\0'; c++ )
-        {
-            ESCAPE( *c )
-            printf( "%c", *c );
-        }
+        string_dump( k->id );
         printf( "\": " );
-        dump_value( k->value );
+        toml_value_dump( k->value );
     }
     else if( k->type==ARRAYTABLE )
     {
         printf( "\"" );
-        for( char* c=k->id; *c!= '\0'; c++ )
-        {
-            ESCAPE( *c )
-            printf( "%c", *c );
-        }
+        string_dump( k->id );
         printf( "\": [\n" );
         for( size_t i=0; i<=k->idx; i++ )
         {
-            dump_value( k->value->arr[ i ] );
+            toml_value_dump( k->value->arr[ i ] );
             if( i!=k->idx )
                 printf( ",\n" );
         }
@@ -131,15 +104,11 @@ void dump_key( key_t* k )
     else
     {
         printf( "\"" );
-        for( char* c=k->id; *c!= '\0'; c++ )
-        {
-            ESCAPE( *c )
-            printf( "%c", *c );
-        }
+        string_dump( k->id );
         printf( "\": {\n" );
-        for( key_t** iter=k->subkeys; iter<k->last; iter++ )
+        for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
         {
-            dump_key( *iter );
+            toml_key_dump( *iter );
             if( ( iter+1 )!=k->last )
                 printf( ",\n" );
         }
@@ -147,18 +116,14 @@ void dump_key( key_t* k )
     }
 }
 
-void dump_value( value_t* v )
+void toml_value_dump( toml_value_t* v )
 {
     switch ( v->type )
     {
         case STRING:
         {
             printf( "{\"type\": \"string\", \"value\": \"" );
-            for( char* c=( char* )( v->data ); *c!= '\0'; c++ )
-            {
-                ESCAPE( *c )
-                printf( "%c", *c );
-            }
+            string_dump( ( char* )v->data );
             printf( "\"}" );
             break;
         }
@@ -230,9 +195,9 @@ void dump_value( value_t* v )
         case ARRAY:
         {
             printf( "[\n" );
-            for( value_t** iter=v->arr; *iter!=NULL; iter++ )
+            for( toml_value_t** iter=v->arr; *iter!=NULL; iter++ )
             {
-                dump_value( *iter );
+                toml_value_dump( *iter );
                 if( *( iter+1 )!=NULL )
                     printf( ",\n" );
             }
@@ -242,10 +207,10 @@ void dump_value( value_t* v )
         case INLINETABLE:
         {
             printf( "{\n" );
-            key_t* k = ( key_t* )( v->data );
-            for( key_t** iter=k->subkeys; iter<k->last; iter++ )
+            toml_key_t* k = ( toml_key_t* )( v->data );
+            for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
             {
-                dump_key( ( *iter ) );
+                toml_key_dump( ( *iter ) );
                 if( ( iter+1 )!=k->last )
                     printf( ",\n" );
             }
@@ -258,16 +223,36 @@ void dump_value( value_t* v )
     }
 }
 
-void json_dump( key_t* root )
+void toml_json_dump( toml_key_t* root )
 {
     printf( "{\n" );
-    for( key_t** iter=root->subkeys; iter<root->last; iter++ )
+    for( toml_key_t** iter=root->subkeys; iter<root->last; iter++ )
     {
-        dump_key( *iter );
+        toml_key_dump( *iter );
         if( (iter+1)!=root->last )
             printf( ",\n" );
     }
     printf( "\n}\n" );
 }
 
-#endif
+toml_key_t* toml_get_key(
+    toml_key_t* key,
+    const char* id
+)
+{
+    if( key==NULL )
+        return NULL;
+    if( strcmp( key->id, id )==0 )
+        return key;
+    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
+    {
+        if( strcmp( ( *iter )->id, id )==0 )
+            return *iter;
+    }
+    LOG_ERR_RETURN( "node %s does not exist in subkeys of node %s", id, key->id );
+}
+
+void toml_free( toml_key_t* root )
+{
+    delete_key( root );
+}
