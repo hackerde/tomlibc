@@ -53,7 +53,7 @@ toml_key_t* add_subkey(
         }
         else
         {
-            LOG_ERR_RETURN(
+            RETURN_ON_FAIL( 0,
                 "failed to add subkey\n"
                 "existing subkey - key: %s type: %d\n"
                 "new subkey: key: %s type: %d\n", 
@@ -81,7 +81,7 @@ toml_key_t* add_subkey(
         }
     }
     else
-        LOG_ERR_RETURN( "buffer overflow\n" );
+        LOG_ERR( "buffer overflow\n" );
     return NULL;
 }
 

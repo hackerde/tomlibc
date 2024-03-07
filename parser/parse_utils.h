@@ -2,6 +2,7 @@
 #define __TOMLIBC_PARSE_UTILS_H__
 
 #include <stdbool.h>
+#include <time.h>
 
 /*
     All of these are utility functions to
@@ -39,5 +40,6 @@ bool is_arraystart( char c );
 bool is_arrayend( char c );
 bool is_arraysep( char c );
 bool is_date( int year, int month, int day );
+bool is_validdatetime( struct tm* datetime );
 
 #endif

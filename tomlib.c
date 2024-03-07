@@ -54,7 +54,7 @@ toml_key_t* toml_load( const char* file )
     if( file )
     {
         stream = fopen( file, "r" );
-        FAIL_RETURN( stream, "Could not open file: %s\n", file )
+        RETURN_ON_FAIL( stream, "Could not open file: %s\n", file );
     }
     else
     {
@@ -68,10 +68,9 @@ toml_key_t* toml_load( const char* file )
     while( has_token( tok )!=0 )
     {
         key = parse_keyval( tok, key, root );
-        FAIL_RETURN( key, "Encountered an error while parsing %s\n"
-                          "At line %d column %d\n",
-                          file, tok->line+1, tok->col
-        )
+        RETURN_ON_FAIL( key, "Encountered an error while parsing %s\n"
+                        "At line %d column %d\n",
+                        file, tok->line+1, tok->col );
     }
 
     delete_tokenizer( tok );
@@ -249,10 +248,11 @@ toml_key_t* toml_get_key(
         if( strcmp( ( *iter )->id, id )==0 )
             return *iter;
     }
-    LOG_ERR_RETURN( "node %s does not exist in subkeys of node %s", id, key->id );
+    LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
+    return NULL;
 }
 
-void toml_free( toml_key_t* root )
+void toml_free( toml_key_t* toml )
 {
-    delete_key( root );
+    delete_key( toml );
 }

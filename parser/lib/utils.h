@@ -18,35 +18,18 @@
     } while( 0 )
 
 /*
-    Macro `LOG_ERR_BREAK` calls `LOG_ERR`
-    and then calls a `break;`
+    Macro `RETURN_ON_FAIL` checks `COND` and
+    if it fails, returns NULL from the location
+    where it is called.
 */
-#define LOG_ERR_BREAK( ... )                \
-    { LOG_ERR( __VA_ARGS__ );               \
-    break; }
-
-/*
-    Macro `LOG_ERR_RETURN` calls `LOG_ERR`
-    and then returns NULL.
-*/
-#define LOG_ERR_RETURN( ... )               \
-    { LOG_ERR( __VA_ARGS__ );               \
-    return NULL; }
-
-/*
-    Macro `FAIL_BREAK` calls `LOG_ERR_BREAK`
-    if the given condition fails.
-*/
-#define FAIL_BREAK( COND, ... )             \
-    if( !( COND ) )                         \
-        LOG_ERR_BREAK( __VA_ARGS__ );       \
-
-/*
-    Macro `FAIL_RETURN` calls `LOG_ERR_RETURN`
-    if the given condition fails.
-*/
-#define FAIL_RETURN( COND, ... )            \
-    if( !( COND ) )                         \
-        LOG_ERR_RETURN( __VA_ARGS__ );      \
+#define RETURN_ON_FAIL( COND, ... )         \
+    do                                      \
+    {                                       \
+        if( !( COND ) )                     \
+        {                                   \
+            LOG_ERR( __VA_ARGS__ );         \
+            return NULL;                    \
+        }                                   \
+    } while( 0 )
 
 #endif
