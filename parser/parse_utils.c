@@ -219,3 +219,12 @@ bool is_date(
     }
     return false;
 }
+
+bool is_validdatetime( struct tm* datetime )
+{
+    return( ( datetime->tm_hour>=0 && datetime->tm_hour<=23 ) &&
+            ( datetime->tm_min>=0 && datetime->tm_min<=59 ) &&
+            ( datetime->tm_sec>=0 && datetime->tm_sec<=59 ) &&
+            is_date( datetime->tm_year+1900, datetime->tm_mon, datetime->tm_mday )
+    );
+}

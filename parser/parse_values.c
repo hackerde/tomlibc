@@ -19,7 +19,7 @@ char* parse_basicstring(
     size_t idx = 0;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_ON_FAIL( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_basicstringstart( get_token( tok ) ) )
         {
             if( !multi )
@@ -55,7 +55,10 @@ char* parse_basicstring(
             }
         }
         else if( parse_newline( tok ) && !multi )
-            LOG_ERR_BREAK( "newline before end of string\n" )
+        {
+            LOG_ERR( "newline before end of string\n" );
+            break;
+        }
         else if( parse_newline( tok ) && multi && idx==0 )
             ;
         else if( is_escape( get_token( tok ) ) )
@@ -76,13 +79,13 @@ char* parse_basicstring(
                         next_token( tok );
                     }
                 }
-                FAIL_BREAK( hit, "cannot have characters on same line after \\\n" )
+                RETURN_ON_FAIL( hit, "cannot have characters on same line after \\\n" );
                 continue;
             }
             else
             {
-                FAIL_BREAK( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) )
-                FAIL_BREAK( c<5, "parsed escape sequence is too long\n" )
+                RETURN_ON_FAIL( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) );
+                RETURN_ON_FAIL( c<5, "parsed escape sequence is too long\n" );
                 for( int i=0; i<c; i++ )
                     value[ idx++ ] = escaped[i];
                 // parse_escape will parse everything and move on to the next token
@@ -91,9 +94,15 @@ char* parse_basicstring(
             }
         }
         else if( !multi && is_control( get_token( tok ) ) )
-            LOG_ERR_BREAK( "control characters need to be escaped\n" )
+        {
+            LOG_ERR( "control characters need to be escaped\n" );
+            break;
+        }
         else if( multi && is_control_multi( get_token( tok ) ) )
-            LOG_ERR_BREAK( "control characters need to be escaped\n" )
+        {
+            LOG_ERR( "control characters need to be escaped\n" );
+            break;
+        }
         else
             value[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -110,7 +119,7 @@ char* parse_literalstring(
     size_t idx = 0;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_ON_FAIL( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_literalstringstart( get_token( tok ) ) )
         {
             if( !multi )
@@ -146,11 +155,17 @@ char* parse_literalstring(
             }
         }
         else if( parse_newline( tok ) && !multi )
-            LOG_ERR_BREAK( "newline before end of string\n" )
+        {
+            LOG_ERR( "newline before end of string\n" );
+            break;
+        }
         else if( parse_newline( tok ) && multi && idx==0 )
             ;
         else if( is_control_literal( get_token( tok ) ) )
-            LOG_ERR_BREAK( "control characters need to be escaped\n" )
+        {
+            LOG_ERR( "control characters need to be escaped\n" );
+            break;
+        }
         else
             value[ idx++ ] = get_token( tok );
         next_token( tok );
@@ -170,7 +185,7 @@ datetime_t* parse_datetime(
     int spaces = 0;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_ON_FAIL( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( ( is_whitespace( get_token( tok ) ) && spaces ) ||
             ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) ) )
         {
@@ -187,241 +202,162 @@ datetime_t* parse_datetime(
             char off_h  [ 3 ] = { 0 };
             char off_m  [ 3 ] = { 0 };
 
+            char* end;
+            unsigned long num;
+            #define CHECK_DATETIME( var, len, ... )                     \
+                do                                                      \
+                {                                                       \
+                    RETURN_ON_FAIL( strlen( var )==len, __VA_ARGS__ );  \
+                    num = strtoul( var, &end, 10 );                     \
+                    RETURN_ON_FAIL( end==var+len, __VA_ARGS__ );        \
+                } while( 0 )
+
+            #define CHECK_DATE()                                        \
+                do                                                      \
+                {                                                       \
+                    CHECK_DATETIME( year, 4, "invalid year\n" );        \
+                    time->tm_year = num-1900;                           \
+                    CHECK_DATETIME( mon, 2, "invalid month\n" );        \
+                    time->tm_mon =  num-1;                              \
+                    CHECK_DATETIME( mday, 2, "invalid day\n" );         \
+                    time->tm_mday = num;                                \
+                } while( 0 )
+
+            #define CHECK_TIME()                                        \
+                do                                                      \
+                {                                                       \
+                    CHECK_DATETIME( hour, 2, "invalid hour\n" );        \
+                    time->tm_hour = num;                                \
+                    CHECK_DATETIME( min, 2, "invalid minute\n" );       \
+                    time->tm_min =  num;                                \
+                    CHECK_DATETIME( sec, 2, "invalid second\n" );       \
+                    time->tm_sec =  num;                                \
+                } while( 0 )
+
             int t;
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c%2c:%2c",
                         year, mon, mday, delim, hour, min, sec, off_s, off_h, off_m );
             if( t==10 )
             {
-                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
-                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
-                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
-                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
-                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
-                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
-                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
-                FAIL_BREAK( strlen( off_s )==1, "invalid offset sign\n" )
-                FAIL_BREAK( strlen( off_h )==2, "invalid offset hour\n" )
-                FAIL_BREAK( strlen( off_m )==2, "invalid offset minute\n" )
-                if( delim[ 0 ]==' ' )
-                {
-                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SS-HH:MM" ), "datetime has incorrect number of characters\n" )
-                }
-                else
-                {
-                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS-HH:MM" )+spaces ) ), "datetime has incorrect number of characters\n" )
-                }
-                char* end;
-                unsigned long num;
-                num = strtoul( year, &end, 10 );
-                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
-                time->tm_year = num-1900;
-                num = strtoul( mon, &end, 10 );
-                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
-                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
-                time->tm_mon = num-1;
-                num = strtoul( mday, &end, 10 );
-                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
-                time->tm_mday = num;
-                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
-                num = strtoul( hour, &end, 10 );
-                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
-                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
-                time->tm_hour = num;
-                num = strtoul( min, &end, 10 );
-                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
-                time->tm_min = num;
-                num = strtoul( sec, &end, 10 );
-                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
-                time->tm_sec = num;
-                num = strtoul( off_h, &end, 10 );
-                FAIL_BREAK( end==off_h+strlen( off_h ), "invalid offset hour\n" )
-                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid offset hour\n" )
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( strlen( off_s )==1, "invalid offset sign\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( off_s[ 0 ]=='+' || off_s[ 0 ]=='-' ), "invalid offset sign\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified offset datetime is not valid\n" );
+
+                CHECK_DATETIME( off_h, 2, "invalid offset hour\n" );
+                RETURN_ON_FAIL( ( num>=0 && num<=23 ), "invalid offset hour\n" );
                 time->tm_gmtoff = num*60*60;
-                num = strtoul( off_m, &end, 10 );
-                FAIL_BREAK( end==off_m+strlen( off_m ), "invalid offset minute\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid offset minute\n" )
+                CHECK_DATETIME( off_m, 2, "invalid offset minute\n" );
+                RETURN_ON_FAIL( ( num>=0 && num<=59 ), "invalid offset minute\n" );
                 time->tm_gmtoff += num;
-                FAIL_BREAK( ( 0==strcmp( off_s, "+" ) || 0==strcmp( off_s, "-" ) ), "invalid offset sign\n" )
-                if( 0==strcmp( off_s, "-" ) )
+                if( off_s[ 0 ]=='-' )
                     time->tm_gmtoff *= -1;
+
+                if( delim[ 0 ]==' ' )
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS-HH:MM" )+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
                 dt = calloc( 1, sizeof( datetime_t ) );
-                char* format = "%Y-%m-%dT%H:%M:%S-HH:MM";
-                dt->format = calloc( 1, strlen( format )+1 );
-                int c = snprintf( dt->format, strlen( format )+1, "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s", off_s[ 0 ], off_h, off_m );
                 dt->type = DATETIME;
                 dt->dt = time;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+2 );
+                int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+1, 
+                                  "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s", off_s[ 0 ], off_h, off_m );
                 return dt;
             }
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c",
                         year, mon, mday, delim, hour, min, sec, tz );
             if( t==8 )
             {
-                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
-                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
-                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
-                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
-                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
-                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
-                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
-                FAIL_BREAK( strlen( tz )==1, "invalid timezone\n" )
-                if( delim[ 0 ]==' ' )
-                {
-                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SSZ" ), "datetime has incorrect number of characters\n" )
-                }
-                else
-                {
-                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SSZ" )+spaces ) ), "datetime has incorrect number of characters\n" )
-                }
-                char* end;
-                unsigned long num;
-                num = strtoul( year, &end, 10 );
-                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
-                time->tm_year = num-1900;
-                num = strtoul( mon, &end, 10 );
-                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
-                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
-                time->tm_mon = num-1;
-                num = strtoul( mday, &end, 10 );
-                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day %d %d %lu\n", time->tm_year, time->tm_mon, num )
-                time->tm_mday = num;
-                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
-                num = strtoul( hour, &end, 10 );
-                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
-                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
-                time->tm_hour = num;
-                num = strtoul( min, &end, 10 );
-                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
-                time->tm_min = num;
-                num = strtoul( sec, &end, 10 );
-                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
-                time->tm_sec = num;
-                FAIL_BREAK( ( 0==strcmp( tz, "Z" ) || 0==strcmp( tz, "z" ) ), "invalid timezone\n" )
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( strlen( tz )==1, "invalid timezone\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( tz[ 0 ]=='Z' || tz[ 0 ]=='z' ), "invalid timezone\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified offset datetime is not valid\n" );
                 time->tm_zone = "UTC";
+
+                if( delim[ 0 ]==' ' )
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SSZ" )+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
                 dt = calloc( 1, sizeof( datetime_t ) );
-                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" ) );
-                char* format = "%Y-%m-%dT%H:%M:%SZ";
-                dt->format = calloc( 1, strlen( format )+1 );
-                int c = snprintf( dt->format, strlen( format )+1, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
                 dt->type = DATETIME;
                 dt->dt = time;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%SZ" )+2 );
+                int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%SZ" )+1, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
                 return dt;
             }
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c",
                         year, mon, mday, delim, hour, min, sec );
             if( t==7 )
             {
-                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
-                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
-                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
-                FAIL_BREAK( strlen( delim )==1, "invalid delimiter\n" )
-                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
-                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
-                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified local datetime is not valid\n" );
+
                 if( delim[ 0 ]==' ' )
-                {
-                    FAIL_BREAK( strlen( value )==strlen( "YYYY-mm-DD HH:MM:SS" ), "datetime has incorrect number of characters\n" )
-                }
-                else
-                {
-                    FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS" )+spaces ) ), "datetime has incorrect number of characters\n" )
-                }
-                char* end;
-                unsigned long num;
-                num = strtoul( year, &end, 10 );
-                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
-                time->tm_year = num-1900;
-                num = strtoul( mon, &end, 10 );
-                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
-                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
-                time->tm_mon = num-1;
-                num = strtoul( mday, &end, 10 );
-                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
-                time->tm_mday = num;
-                FAIL_BREAK( ( 0==strcmp( delim, "T" ) || 0==strcmp( delim, " " ) || 0==strcmp( delim, "t" ) ), "invalid delimiter\n" )
-                num = strtoul( hour, &end, 10 );
-                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
-                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
-                time->tm_hour = num;
-                num = strtoul( min, &end, 10 );
-                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
-                time->tm_min = num;
-                num = strtoul( sec, &end, 10 );
-                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
-                time->tm_sec = num;
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS" )+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
                 dt = calloc( 1, sizeof( datetime_t ) );
-                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" ) );
-                memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", strlen( "%Y-%m-%dT%H:%M:%S" ) );
                 dt->type = DATETIMELOCAL;
                 dt->dt = time;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" )+1 );
+                memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", strlen( "%Y-%m-%dT%H:%M:%S" ) );
                 return dt;
             }
             t = sscanf( value, "%4c-%2c-%2c",
                         year, mon, mday );
             if( t==3 )
             {
-                FAIL_BREAK( strlen( year )==4, "invalid year\n" )
-                FAIL_BREAK( strlen( mon )==2, "invalid month\n" )
-                FAIL_BREAK( strlen( mday )==2, "invalid day\n" )
-                FAIL_BREAK( ( strlen( value )==( strlen( "YYYY-mm-DD" )+spaces ) ), "date has incorrect number of characters\n" )
-                char* end;
-                unsigned long num;
-                num = strtoul( year, &end, 10 );
-                FAIL_BREAK( end==year+strlen( year ), "invalid year\n" )
-                time->tm_year = num-1900;
-                num = strtoul( mon, &end, 10 );
-                FAIL_BREAK( end==mon+strlen( mon ), "invalid month\n" )
-                FAIL_BREAK( ( num>=1 && num<=12 ), "invalid month\n" )
-                time->tm_mon = num-1;
-                num = strtoul( mday, &end, 10 );
-                FAIL_BREAK( end==mday+strlen( mday ), "invalid day\n" )
-                FAIL_BREAK( is_date( time->tm_year+1900, time->tm_mon, num ), "invalid day\n" )
-                time->tm_mday = num;
+                CHECK_DATE();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified local date is not valid\n" );
+
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DD" )+spaces ) ),
+                                "date has incorrect number of characters\n" );
+
                 dt = calloc( 1, sizeof( datetime_t ) );
-                dt->format = calloc( 1, strlen( "%Y-%m-%d" ) );
-                memcpy( dt->format, "%Y-%m-%d", strlen( "%Y-%m-%d" ) );
                 dt->type = DATELOCAL;
                 dt->dt = time;
+                dt->format = calloc( 1, strlen( "%Y-%m-%d" )+1 );
+                memcpy( dt->format, "%Y-%m-%d", strlen( "%Y-%m-%d" ) );
                 return dt;
             }
             t = sscanf( value, "%2c:%2c:%2c",
                         hour, min, sec );
             if( t==3 )
             {
-                FAIL_BREAK( strlen( hour )==2, "invalid hour\n" )
-                FAIL_BREAK( strlen( min )==2, "invalid minute\n" )
-                FAIL_BREAK( strlen( sec )==2, "invalid second\n" )
-                FAIL_BREAK( ( strlen( value )==( strlen( "HH:MM:SS" )+spaces ) ), "time has incorrect number of characters\n" )
-                char* end;
-                unsigned long num;
-                num = strtoul( hour, &end, 10 );
-                FAIL_BREAK( end==hour+strlen( hour ), "invalid hour\n" )
-                FAIL_BREAK( ( num>=0 && num<=23 ), "invalid hour\n" )
-                time->tm_hour = num;
-                num = strtoul( min, &end, 10 );
-                FAIL_BREAK( end==min+strlen( min ), "invalid minute\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid minute\n" )
-                time->tm_min = num;
-                num = strtoul( sec, &end, 10 );
-                FAIL_BREAK( end==sec+strlen( sec ), "invalid seconds\n" )
-                FAIL_BREAK( ( num>=0 && num<=59 ), "invalid seconds\n" )
-                time->tm_sec = num;
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified local time is not valid\n" );
+
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "HH:MM:SS" )+spaces ) ),
+                                "time has incorrect number of characters\n" );
+
                 dt = calloc( 1, sizeof( datetime_t ) );
-                dt->format = calloc( 1, strlen( "%H:%M:%S" ) );
-                memcpy( dt->format, "%H:%M:%S", strlen( "%H:%M:%S" ) );
                 dt->type = TIMELOCAL;
                 dt->dt = time;
+                dt->format = calloc( 1, strlen( "%H:%M:%S" )+1 );
+                memcpy( dt->format, "%H:%M:%S", strlen( "%H:%M:%S" ) );
                 return dt;
             }
-            LOG_ERR_BREAK( "could not parse %s as datetime\n", value )
+            #undef CHECK_TIME
+            #undef CHECK_DATE
+            #undef CHECK_DATETIME
+            LOG_ERR( "could not parse %s as datetime\n", value );
+            break;
         }
         else
         {
@@ -477,7 +413,7 @@ toml_value_t* parse_array(
     bool sep = true;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_ARRAY_LENGTH, "buffer overflow\n" );
+        RETURN_ON_FAIL( idx<MAX_ARRAY_LENGTH, "buffer overflow\n" );
         if( is_arrayend( get_token( tok ) ) )
         {
             next_token( tok );
@@ -485,7 +421,7 @@ toml_value_t* parse_array(
         }
         else if( is_arraysep( get_token( tok ) ) )
         {
-            FAIL_BREAK( !sep, "expected value but got , instead\n" )
+            RETURN_ON_FAIL( !sep, "expected value but got , instead\n" );
             sep = true;
             next_token( tok );
         }
@@ -496,13 +432,13 @@ toml_value_t* parse_array(
         else if( is_commentstart( get_token( tok ) ) )
         {
             bool ok = parse_comment( tok );
-            FAIL_BREAK( ok, "invalid comment\n" )
+            RETURN_ON_FAIL( ok, "invalid comment\n" );
         }
         else
         {
-            FAIL_BREAK( sep, "expected , between elements\n" )
+            RETURN_ON_FAIL( sep, "expected , between elements\n" );
             toml_value_t* v = parse_value( tok, "#,] \n" );
-            FAIL_BREAK( v, "could not parse value\n" )
+            RETURN_ON_FAIL( v, "could not parse value\n" );
             arr->arr[ idx++ ] = v;
             sep = false;
         }
@@ -549,27 +485,30 @@ toml_key_t* parse_inlinetable( tokenizer_t* tok )
     {
         if( is_inlinetableend( get_token( tok ) ) )
         {
-            FAIL_BREAK( ( !sep || first ), "cannot have trailing comma in inline table\n" )
+            RETURN_ON_FAIL( ( !sep || first ), "cannot have trailing comma in inline table\n" );
             next_token( tok );
             return keys;
         }
         else if( is_inlinetablesep( get_token( tok ) ) )
         {
-            FAIL_BREAK( !sep, "expected key-value but got , instead" )
+            RETURN_ON_FAIL( !sep, "expected key-value but got , instead" );
             sep = true;
             next_token( tok );
         }
         else if( parse_newline( tok ) )
-            LOG_ERR_BREAK( "found newline in inline table\n" )
+        {
+            LOG_ERR( "found newline in inline table\n" );
+            break;
+        }
         else if( is_whitespace( get_token( tok ) ) )
             parse_whitespace( tok );
         else
         {
-            FAIL_BREAK( sep, "expected , between elements\n" )
+            RETURN_ON_FAIL( sep, "expected , between elements\n" );
             toml_key_t* k = parse_key( tok, keys, true );
-            FAIL_BREAK( k, "failed to parse key\n" )
+            RETURN_ON_FAIL( k, "failed to parse key\n" );
             toml_value_t* v = parse_value( tok, ", }" );
-            FAIL_BREAK( v, "failed to parse value\n" )
+            RETURN_ON_FAIL( v, "failed to parse value\n" );
             // refer to inline table comment in `keys.c`
             if( v->type==INLINETABLE )
             {
@@ -578,7 +517,7 @@ toml_key_t* parse_inlinetable( tokenizer_t* tok )
                 for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
                 {
                     toml_key_t* e = add_subkey( k, *iter );
-                    FAIL_RETURN( e, "could not add inline table key %s\n", ( *iter )->id )
+                    RETURN_ON_FAIL( e, "could not add inline table key %s\n", ( *iter )->id );
                 }
                 k->type = KEYLEAF;
             }
@@ -643,7 +582,10 @@ int parse_unicode(
     while( has_token( tok ) )
     {
         if( digits>8 )
-            LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+        {
+            LOG_ERR( "Invalid unicode escape code\n" );
+            break;
+        }
         if( is_hexdigit( get_token( tok ) ) || is_digit( get_token( tok ) ) )
         {
             code[ digits++ ] = get_token( tok );
@@ -653,11 +595,17 @@ int parse_unicode(
         else
         {
             if( digits!=4 && digits!=8 )
-                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+            {
+                LOG_ERR( "Invalid unicode escape code\n" );
+                break;
+            }
             char* end;
             unsigned long num = strtoul( code, &end, 16 );
             if( end!=code+digits )
-                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+            {
+                LOG_ERR( "Invalid unicode escape code\n" );
+                break;
+            }
             // Unicode Scalar Values: %x80-D7FF / %xE000-10FFFF
             if( ( num>=0x0 && num<=0xD7FF ) || ( num>=0xE000 && num<=0x10FFFF ) )
             {
@@ -691,7 +639,10 @@ int parse_unicode(
                 return 0;
             }
             else
-                LOG_ERR_BREAK( "Invalid unicode escape code\n" )
+            {
+                LOG_ERR( "Invalid unicode escape code\n" );
+                break;
+            }
         }
     }
     return 0;
@@ -776,10 +727,18 @@ double parse_base_uint(
     double d = -1;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        if( idx>=MAX_STRING_LENGTH )
+        {
+            LOG_ERR( "buffer overflow\n" );
+            break;
+        }
         if( is_numberend( get_token( tok ), num_end ) )
         {
-            FAIL_BREAK( idx!=0, "incomplete non-decimal number" )
+            if( idx==0 )
+            {
+                LOG_ERR( "incomplete non-decimal number\n" );
+                break;
+            }
             char* end;
             unsigned long num = strtoul( value, &end, base );
             if( end==value+idx )
@@ -795,7 +754,10 @@ double parse_base_uint(
                 ( is_digit( get_prev_prev( tok ) ) || ( base==16 && is_hexdigit( get_prev_prev( tok ) ) ) ) )
                 value[ idx++ ] = get_token( tok );
             else
-                LOG_ERR_BREAK( "stray %c character\n", get_prev( tok ) );
+            {
+                LOG_ERR( "stray %c character\n", get_prev( tok ) );
+                break;
+            }
         }
         else
             value[ idx++ ] = get_token( tok );
@@ -818,19 +780,19 @@ number_t* parse_number(
     n->precision = 0;
     while( has_token( tok ) )
     {
-        FAIL_BREAK( idx<MAX_STRING_LENGTH, "buffer overflow\n" )
+        RETURN_ON_FAIL( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_numberend( get_token( tok ), num_end ) )
         {
             char* end;
             double num = strtod( value, &end );
-            FAIL_RETURN( end==value+idx, "could not convert %s to double\n", value )
+            RETURN_ON_FAIL( end==value+idx, "could not convert %s to double\n", value );
             *d = num;
             if( n->precision>0 ) n->precision--;
             if( n->type==INT && num!=0 )
             {
-                FAIL_RETURN( value[0]!='0', "cannot have leading zero for integers" )
+                RETURN_ON_FAIL( value[0]!='0', "cannot have leading zero for integers" );
                 if( value[0]=='+' || value[0]=='-' )
-                    FAIL_RETURN( value[1]!='0', "cannot have leading zero for signed integers" )
+                    RETURN_ON_FAIL( value[1]!='0', "cannot have leading zero for signed integers" );
             }
             return n;
         }
@@ -861,7 +823,7 @@ number_t* parse_number(
                 value[ idx++ ] = '0';
                 continue;
             }
-            FAIL_RETURN( b!=-1, "invalid non-decimal number\n" )
+            RETURN_ON_FAIL( b!=-1, "invalid non-decimal number\n" );
             *d = b;
             return n;
         }
@@ -880,7 +842,10 @@ number_t* parse_number(
                 value[ idx++ ] = get_token( tok );
             }
             else
-                LOG_ERR_RETURN( "stray %c character\n", get_prev( tok ) )
+            {
+                LOG_ERR( "stray %c character\n", get_prev( tok ) );
+                return NULL;
+            }
         }
         else if( get_token( tok )=='i' || get_token( tok )=='n' )
         {
@@ -895,12 +860,18 @@ number_t* parse_number(
                 return n;
             }
             else
-                LOG_ERR_RETURN( "unknown or invalid number\n" )
+            {
+                LOG_ERR( "unknown or invalid number\n" );
+                return NULL;
+            }
         }
         else if( get_token( tok )=='x' || get_token( tok )=='X' ||
                  get_token( tok )=='b' || get_token( tok )=='B' ||
                  get_token( tok )=='o' || get_token( tok )=='O' )
-            LOG_ERR_BREAK( "invalid decimal number, found stray character %c\n", get_token( tok ) )
+        {
+            LOG_ERR( "invalid decimal number, found stray character %c\n", get_token( tok ) );
+            break;
+        }
         else
         {
             value[ idx++ ] = get_token( tok );
@@ -915,14 +886,14 @@ number_t* parse_number(
     }
     char* end;
     double num = strtod( value, &end );
-    FAIL_RETURN( end==value+idx, "could not convert %s to double\n", value )
+    RETURN_ON_FAIL( end==value+idx, "could not convert %s to double\n", value );
     *d = num;
     if( n->precision>0 ) n->precision--;
     if( n->type==INT && num!=0 )
     {
-        FAIL_RETURN( value[0]!='0', "cannot have leading zero for integers" )
+        RETURN_ON_FAIL( value[0]!='0', "cannot have leading zero for integers" );
         if( value[0]=='+' || value[0]=='-' )
-            FAIL_RETURN( value[1]!='0', "cannot have leading zero for signed integers" )
+            RETURN_ON_FAIL( value[1]!='0', "cannot have leading zero for signed integers" );
     }
     return n;
 }
@@ -934,7 +905,7 @@ toml_value_t* parse_value(
 {
     while( has_token( tok ) )
     {
-        FAIL_BREAK( !parse_newline( tok ), "got a newline before any value\n" )
+        RETURN_ON_FAIL( !parse_newline( tok ), "got a newline before any value\n" );
         if( is_whitespace( get_token( tok ) ) )
         {
             parse_whitespace( tok );
@@ -956,11 +927,14 @@ toml_value_t* parse_value(
                 else if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
                     s = value;
                 else
-                    LOG_ERR_BREAK( "cannot start string with 2 double-quotes\n" )
+                {
+                    LOG_ERR( "cannot start string with 2 double-quotes\n" );
+                    break;
+                }
             }
             else
                 s = parse_basicstring( tok, value, false );
-            FAIL_BREAK( s, "could not parse basic string\n" )
+            RETURN_ON_FAIL( s, "could not parse basic string\n" );
             toml_value_t* v = new_string( value );
             return v;
         }
@@ -980,11 +954,14 @@ toml_value_t* parse_value(
                 else if( is_whitespace( get_token( tok ) ) || parse_newline( tok ) )
                     s = value;
                 else
-                    LOG_ERR_BREAK( "cannot start string with 2 single-quotes\n" )
+                {
+                    LOG_ERR( "cannot start string with 2 single-quotes\n" );
+                    break;
+                }
             }
             else
                 s = parse_literalstring( tok, value, false );
-            FAIL_BREAK( s, "could not parse literal string\n" )
+            RETURN_ON_FAIL( s, "could not parse literal string\n" );
             toml_value_t* v = new_string( value );
             return v;
         }
@@ -998,7 +975,7 @@ toml_value_t* parse_value(
             {
                 backtrack( tok, a+b );
                 datetime_t* dt = parse_datetime( tok, value, num_end );
-                FAIL_BREAK( dt, "could not parse time\n" )
+                RETURN_ON_FAIL( dt, "could not parse time\n" );
                 toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                 return v;
             }
@@ -1012,7 +989,7 @@ toml_value_t* parse_value(
                 {
                     backtrack( tok, a+b+c+d );
                     datetime_t* dt = parse_datetime( tok, value, num_end );
-                    FAIL_BREAK( dt, "could not parse datetime\n" )
+                    RETURN_ON_FAIL( dt, "could not parse datetime\n" );
                     toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
                     return v;
                 }
@@ -1021,7 +998,7 @@ toml_value_t* parse_value(
             }
             double* d = calloc( 1, sizeof( double ) );
             number_t* n = parse_number( tok, value, d, num_end );
-            FAIL_BREAK( n, "could not parse number\n" )
+            RETURN_ON_FAIL( n, "could not parse number\n" );
             toml_value_t* v = new_number( d, n->type, n->precision, n->scientific );
             return v;
         }
@@ -1030,33 +1007,36 @@ toml_value_t* parse_value(
             toml_value_t* v = new_array();
             next_token( tok );
             v = parse_array( tok, v );
-            FAIL_BREAK( v, "could not parse array\n" )
+            RETURN_ON_FAIL( v, "could not parse array\n" );
             return v;
         }
         else if( is_inlinetablestart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* keys = parse_inlinetable( tok );
-            FAIL_BREAK( keys, "could not parse inline table\n" )
+            RETURN_ON_FAIL( keys, "could not parse inline table\n" );
             toml_value_t* v = new_inline_table( keys );
             return v;
         }
         else if( get_token( tok )=='t' || get_token( tok )=='f' )
         {
             double b = parse_boolean( tok );
-            FAIL_BREAK( ( b==1 || b==0 ), "expecting true or false but could not parse\n" )
+            RETURN_ON_FAIL( ( b==1 || b==0 ), "expecting true or false but could not parse\n" );
             toml_value_t* v = new_number( &b, BOOL, 0, false );
             return v;
         }
         else if( get_token( tok )=='i' || get_token( tok )=='n' )
         {
             double f = parse_inf_nan( tok, false );
-            FAIL_BREAK( f, "expecting inf or nan but could not parse\n" )
+            RETURN_ON_FAIL( f, "expecting inf or nan but could not parse\n" );
             toml_value_t* v = new_number( &f, FLOAT, 0, false );
             return v;
         }
         else
-            LOG_ERR_BREAK( "unknown value type\n" )
+        {
+            LOG_ERR( "unknown value type\n" );
+            break;
+        }
     }
     return NULL;
 }

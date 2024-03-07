@@ -9,9 +9,9 @@
 #define MAX_ARRAY_LENGTH    50
 
 /*
-    Enum `toml_value_type` represents the set of value types
-    accepted by this TOML parser. This corresponds to
-    the various types defined in the TOML Spec.
+    Enum `toml_value_type` represents the set of value
+    types accepted by this TOML parser. This corresponds
+    to the various types defined in the TOML Spec.
 */
 typedef enum toml_value_type toml_value_type_t;
 enum toml_value_type
@@ -29,11 +29,11 @@ enum toml_value_type
 };
 
 /*
-    Struct `value` holds the various attributes associated
-    with a TOML value.
+    Struct `toml_value` holds the various attributes
+    associated with a TOML value.
 */
-typedef struct value toml_value_t;
-struct value
+typedef struct toml_value toml_value_t;
+struct toml_value
 {
     /* the type of TOML value */
     toml_value_type_t   type;
@@ -69,12 +69,12 @@ enum toml_key_type
 };
 
 /*
-    Struct `key` defines the TOML keys. Each node in the
-    parsed AST is a `key`, irrespective of the fact if
-    they were defined as TOML keys or tables.
+    Struct `toml_key` defines the TOML keys. Each node in
+    the parsed AST is a `key`, irrespective of the fact
+    if they were defined as TOML keys or tables.
 */
-typedef struct key toml_key_t;
-struct key
+typedef struct toml_key toml_key_t;
+struct toml_key
 {
     /* key type as described above */
     toml_key_type_t type;

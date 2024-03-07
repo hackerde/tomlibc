@@ -14,16 +14,19 @@
 toml_key_t* toml_load   ( const char* file );
 
 /*
-    Function `dump_key`, `dump_value` and
-    `dump_toml` are functions to print out the
+    Function `toml_key_dump`, `toml_value_dump` and
+    `toml_json_dump` are functions to print out the
     TOML data in a JSON format for compliance testing.
 */
 void toml_key_dump      ( toml_key_t* k );
 void toml_value_dump    ( toml_value_t* v );
-
 void toml_json_dump     ( toml_key_t* root );
 
-void toml_free          ( toml_key_t* root );
+/*
+    Function `toml_free` de-allocates all the memory
+    used up by the TOML data structures.
+*/
+void toml_free          ( toml_key_t* toml );
 
 /*
     ==CALLBACKS==
