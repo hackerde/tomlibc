@@ -40,7 +40,7 @@ $ ./tests/run_toml_tests.sh [-r]    # this runs the toml-test suite tests
 Running tomlibc tests
 ==================
 ...
-[TEST REPORT]: Passed 54 tests | Failed 1 tests | Percent: 98.18%
+[TEST REPORT]: Passed 55 tests | Failed 0 tests | Percent: 100.00%
 ```
 
 **toml-test**
@@ -49,9 +49,7 @@ Running tomlibc tests
 Running toml-test tests
 ==================
 ...
-[TEST REPORT]: Passed 505 tests | Failed 33 tests | Percent: 93.86%
+[TEST REPORT]: Passed 511 tests | Failed 27 tests | Percent: 94.98%
 ```
 
-## Limitations
-
-Aside from the usual bug fixes, this TOML parser currently does not support millisecond precision.
+The failing tests involve leading zeros, `+` or `-` signs, invalid unicode characters, etc.

@@ -42,7 +42,8 @@ toml_value_t*    new_string          ( const char* s );
 toml_value_t*    new_datetime(
     struct tm*          dt,
     toml_value_type_t   type,
-    char*               format
+    char*               format,
+    int                 millis
 );
 
 toml_value_t*    new_number(
