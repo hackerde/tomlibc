@@ -190,6 +190,7 @@ datetime_t* parse_datetime(
             ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) ) )
         {
             struct tm* time = calloc( 1, sizeof( struct tm ) );
+            int  millis       =   0  ;
             char year   [ 5 ] = { 0 };
             char mon    [ 3 ] = { 0 };
             char mday   [ 3 ] = { 0 };
@@ -235,6 +236,48 @@ datetime_t* parse_datetime(
                 } while( 0 )
 
             int t;
+            // DATETIME with millisecond and offset
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c.%d%1c%2c:%2c",
+                        year, mon, mday, delim, hour, min, sec, &millis, off_s, off_h, off_m );
+            if( t==11 )
+            {
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( strlen( off_s )==1, "invalid offset sign\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( off_s[ 0 ]=='+' || off_s[ 0 ]=='-' ), "invalid offset sign\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified offset datetime is not valid\n" );
+                double mlen = floor( log10( abs( millis ) ) ) + 1;
+
+                CHECK_DATETIME( off_h, 2, "invalid offset hour\n" );
+                RETURN_ON_FAIL( ( num>=0 && num<=23 ), "invalid offset hour\n" );
+                time->tm_gmtoff = num*60*60;
+                CHECK_DATETIME( off_m, 2, "invalid offset minute\n" );
+                RETURN_ON_FAIL( ( num>=0 && num<=59 ), "invalid offset minute\n" );
+                time->tm_gmtoff += num;
+                if( off_s[ 0 ]=='-' )
+                    time->tm_gmtoff *= -1;
+
+                if( delim[ 0 ]==' ' )
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS.-HH:MM" )+mlen+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->type = DATETIME;
+                dt->dt = time;
+                if( mlen==1 ) millis *= 100;
+                if( mlen==2 ) millis *= 10;
+                mlen = ( mlen>3 ) ? mlen : 3;
+                dt->millis = millis;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+2 );
+                int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+1,
+                                  "%%Y-%%m-%%dT%%H:%%M:%%S.%d%c%s:%s", millis, off_s[ 0 ], off_h, off_m );
+                return dt;
+            }
+            // DATETIME with offset
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c%2c:%2c",
                         year, mon, mday, delim, hour, min, sec, off_s, off_h, off_m );
             if( t==10 )
@@ -270,6 +313,68 @@ datetime_t* parse_datetime(
                                   "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s", off_s[ 0 ], off_h, off_m );
                 return dt;
             }
+            // DATETIME with millisecond and timezone
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c.%d%1c",
+                        year, mon, mday, delim, hour, min, sec, &millis, tz );
+            if( t==9 )
+            {
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( strlen( tz )==1, "invalid timezone\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( tz[ 0 ]=='Z' || tz[ 0 ]=='z' ), "invalid timezone\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified offset datetime is not valid\n" );
+                time->tm_zone = "UTC";
+                double mlen = floor( log10( abs( millis ) ) ) + 1;
+
+                if( delim[ 0 ]==' ' )
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS.Z" )+mlen+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->type = DATETIME;
+                dt->dt = time;
+                if( mlen==1 ) millis *= 100;
+                if( mlen==2 ) millis *= 10;
+                mlen = ( mlen>3 ) ? mlen : 3;
+                dt->millis = millis;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+2 );
+                int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+1, "%%Y-%%m-%%dT%%H:%%M:%%S.%dZ", millis );
+                return dt;
+            }
+            // DATETIMELOCAL with millisecond
+            t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c.%d",
+                        year, mon, mday, delim, hour, min, sec, &millis );
+            if( t==8 )
+            {
+                RETURN_ON_FAIL( strlen( delim )==1, "invalid delimiter\n" );
+                RETURN_ON_FAIL( ( delim[ 0 ]=='T' || delim[ 0 ]=='t' || delim[ 0 ]==' ' ), "invalid delimiter\n" );
+
+                CHECK_DATE();
+                CHECK_TIME();
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified local datetime is not valid\n" );
+                double mlen = floor( log10( abs( millis ) ) ) + 1;
+
+                if( delim[ 0 ]==' ' )
+                    spaces = 0;
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "YYYY-mm-DDTHH:MM:SS." )+mlen+spaces ) ),
+                                "datetime has incorrect number of characters\n" );
+
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->type = DATETIMELOCAL;
+                dt->dt = time;
+                if( mlen==1 ) millis *= 100;
+                if( mlen==2 ) millis *= 10;
+                mlen = ( mlen>3 ) ? mlen : 3;
+                dt->millis = millis;
+                dt->format = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+2 );
+                int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+1, "%%Y-%%m-%%dT%%H:%%M:%%S.%d", millis );
+                return dt;
+            }
+            // DATETIME with timezone
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c%1c",
                         year, mon, mday, delim, hour, min, sec, tz );
             if( t==8 )
@@ -296,6 +401,7 @@ datetime_t* parse_datetime(
                 int c = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%SZ" )+1, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
                 return dt;
             }
+            // DATETIMELOCAL
             t = sscanf( value, "%4c-%2c-%2c%1c%2c:%2c:%2c",
                         year, mon, mday, delim, hour, min, sec );
             if( t==7 )
@@ -319,6 +425,7 @@ datetime_t* parse_datetime(
                 memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", strlen( "%Y-%m-%dT%H:%M:%S" ) );
                 return dt;
             }
+            // DATELOCAL
             t = sscanf( value, "%4c-%2c-%2c",
                         year, mon, mday );
             if( t==3 )
@@ -336,11 +443,41 @@ datetime_t* parse_datetime(
                 memcpy( dt->format, "%Y-%m-%d", strlen( "%Y-%m-%d" ) );
                 return dt;
             }
+            // TIMELOCAL with millisecond
+            t = sscanf( value, "%2c:%2c:%2c.%d",
+                        hour, min, sec, &millis );
+            if( t==4 )
+            {
+                CHECK_TIME();
+                time->tm_year = 0;
+                time->tm_mon = 0;
+                time->tm_mday = 1;
+                RETURN_ON_FAIL( is_validdatetime( time ), "specified local time is not valid\n" );
+                double mlen = floor( log10( abs( millis ) ) ) + 1;
+
+                RETURN_ON_FAIL( ( strlen( value )==( strlen( "HH:MM:SS." )+mlen+spaces ) ),
+                                "time has incorrect number of characters\n" );
+
+                dt = calloc( 1, sizeof( datetime_t ) );
+                dt->type = TIMELOCAL;
+                dt->dt = time;
+                if( mlen==1 ) millis *= 100;
+                if( mlen==2 ) millis *= 10;
+                mlen = ( mlen>3 ) ? mlen : 3;
+                dt->millis = millis;
+                dt->format = calloc( 1, strlen( "%H:%M:%S" )+mlen+2 );
+                int c = snprintf( dt->format, strlen( "%H:%M:%S." )+mlen+1, "%%H:%%M:%%S.%d", millis );
+                return dt;
+            }
+            // TIMELOCAL
             t = sscanf( value, "%2c:%2c:%2c",
                         hour, min, sec );
             if( t==3 )
             {
                 CHECK_TIME();
+                time->tm_year = 0;
+                time->tm_mon = 0;
+                time->tm_mday = 1;
                 RETURN_ON_FAIL( is_validdatetime( time ), "specified local time is not valid\n" );
 
                 RETURN_ON_FAIL( ( strlen( value )==( strlen( "HH:MM:SS" )+spaces ) ),
@@ -976,7 +1113,7 @@ toml_value_t* parse_value(
                 backtrack( tok, a+b );
                 datetime_t* dt = parse_datetime( tok, value, num_end );
                 RETURN_ON_FAIL( dt, "could not parse time\n" );
-                toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
+                toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
                 return v;
             }
             else if( !is_digit( get_prev( tok ) ) || !is_digit( get_token( tok ) ) )
@@ -990,7 +1127,7 @@ toml_value_t* parse_value(
                     backtrack( tok, a+b+c+d );
                     datetime_t* dt = parse_datetime( tok, value, num_end );
                     RETURN_ON_FAIL( dt, "could not parse datetime\n" );
-                    toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format );
+                    toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
                     return v;
                 }
                 else

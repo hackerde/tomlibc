@@ -29,6 +29,7 @@ struct datetime
     struct tm*          dt;
     toml_value_type_t   type;
     char*               format;
+    int                 millis;
 };
 
 /*

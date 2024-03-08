@@ -15,10 +15,10 @@ toml_value_t* new_string( const char* s )
 }
 
 toml_value_t* new_number(
-    double*         d,
-    toml_value_type_t    type,
-    size_t          precision,
-    bool            scientific
+    double*             d,
+    toml_value_type_t   type,
+    size_t              precision,
+    bool                scientific
 )
 {
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
@@ -31,13 +31,15 @@ toml_value_t* new_number(
 }
 
 toml_value_t* new_datetime(
-    struct tm*      dt,
-    toml_value_type_t    type,
-    char*           format
+    struct tm*          dt,
+    toml_value_type_t   type,
+    char*               format,
+    int                 millis
 )
 {
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
     v->type = type;
+    v->precision = millis;
     v->data = calloc( 1, sizeof( struct tm ) );
     v->format = calloc( 1, strlen( format ) );
     memcpy( v->format, format, strlen( format ) );
