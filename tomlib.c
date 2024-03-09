@@ -54,7 +54,7 @@ toml_key_t* toml_load( const char* file )
     if( file )
     {
         stream = fopen( file, "r" );
-        RETURN_ON_FAIL( stream, "Could not open file: %s\n", file );
+        RETURN_IF_FAILED( stream, "Could not open file: %s\n", file );
     }
     else
     {
@@ -68,7 +68,7 @@ toml_key_t* toml_load( const char* file )
     while( has_token( tok )!=0 )
     {
         key = parse_keyval( tok, key, root );
-        RETURN_ON_FAIL( key, "Encountered an error while parsing %s\n"
+        RETURN_IF_FAILED( key, "Encountered an error while parsing %s\n"
                         "At line %d column %d\n",
                         file, tok->line+1, tok->col );
     }
@@ -96,7 +96,9 @@ void toml_key_dump( toml_key_t* k )
         {
             toml_value_dump( k->value->arr[ i ] );
             if( i!=k->idx )
+            {
                 printf( ",\n" );
+            }
         }
         printf("\n]");
     }
@@ -109,7 +111,9 @@ void toml_key_dump( toml_key_t* k )
         {
             toml_key_dump( *iter );
             if( ( iter+1 )!=k->last )
+            {
                 printf( ",\n" );
+            }
         }
         printf( "\n}" );
     }
@@ -131,17 +135,29 @@ void toml_value_dump( toml_value_t* v )
             printf( "{\"type\": \"float\", \"value\": " );
             double f = *( double* )( v->data );
             if( f==( double ) INFINITY )
+            {
                 printf( "\"inf\"}" );
+            }
             else if( f==( double ) -INFINITY )
+            {
                 printf( "\"-inf\"}" );
+            }
             else if( isnan(f) )
+            {
                 printf( "\"nan\"}" );
+            }
             else if( v->scientific )
+            {
                 printf( "\"%g\"}", f );
+            }
             else if( f==0.0 )
+            {
                 printf( "\"0.0\"}" );
+            }
             else
+            {
                 printf( "\"%.*lf\"}", ( int )v->precision, f );
+            }
             break;
         }
         case INT:
@@ -154,9 +170,13 @@ void toml_value_dump( toml_value_t* v )
         {
             printf( "{\"type\": \"bool\", \"value\": " );
             if( *( double* )( v->data ) )
+            {
                 printf( "\"true\"}" );
+            }
             else
+            {
                 printf( "\"false\"}" );
+            }
             break;
         }
         case DATETIME:
@@ -198,7 +218,9 @@ void toml_value_dump( toml_value_t* v )
             {
                 toml_value_dump( *iter );
                 if( *( iter+1 )!=NULL )
+                {
                     printf( ",\n" );
+                }
             }
             printf("\n]");
             break;
@@ -211,7 +233,9 @@ void toml_value_dump( toml_value_t* v )
             {
                 toml_key_dump( ( *iter ) );
                 if( ( iter+1 )!=k->last )
+                {
                     printf( ",\n" );
+                }
             }
             printf( "\n}" );
             break;
@@ -229,7 +253,9 @@ void toml_json_dump( toml_key_t* root )
     {
         toml_key_dump( *iter );
         if( (iter+1)!=root->last )
+        {
             printf( ",\n" );
+        }
     }
     printf( "\n}\n" );
 }
@@ -240,13 +266,19 @@ toml_key_t* toml_get_key(
 )
 {
     if( key==NULL )
+    {
         return NULL;
+    }
     if( strcmp( key->id, id )==0 )
+    {
         return key;
+    }
     for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
     {
         if( strcmp( ( *iter )->id, id )==0 )
+        {
             return *iter;
+        }
     }
     LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
     return NULL;

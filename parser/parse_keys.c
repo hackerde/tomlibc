@@ -15,22 +15,23 @@ toml_key_t* parse_barekey(
     toml_key_type_t leaf
 )
 {
-    char id[ MAX_ID_LENGTH ] = { 0 };
-    int idx = 0;
-    bool done = false;
+    char    id[ MAX_ID_LENGTH ] = { 0 };
+    int     idx                 = 0;
+    bool    done                = false;
+
     while( has_token( tok ) )
     {
-        RETURN_ON_FAIL( idx<MAX_ID_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<MAX_ID_LENGTH, "buffer overflow\n" );
         if( is_dot( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( idx!=0, "key cannot be empty\n" );
+            RETURN_IF_FAILED( idx!=0, "key cannot be empty\n" );
             toml_key_t* subkey = new_key( branch );
             memcpy( subkey->id, id, strlen( id ) );
             return subkey;
         }
         else if( get_token( tok )==end )
         {
-            RETURN_ON_FAIL( idx!=0, "key cannot be empty\n" );
+            RETURN_IF_FAILED( idx!=0, "key cannot be empty\n" );
             toml_key_t* subkey = new_key( leaf );
             memcpy( subkey->id, id, strlen( id ) );
             return subkey;
@@ -63,16 +64,19 @@ toml_key_t* parse_basicquotedkey(
     toml_key_type_t leaf
 )
 {
-    char id[ MAX_ID_LENGTH ] = { 0 };
-    int idx = 0;
+    char    id[ MAX_ID_LENGTH ] = { 0 };
+    int     idx                 = 0;
+
     while( has_token( tok ) )
     {
-        RETURN_ON_FAIL( idx<MAX_ID_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<MAX_ID_LENGTH, "buffer overflow\n" );
         if( is_basicstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             if( is_whitespace( get_token( tok ) ) )
+            {
                 parse_whitespace( tok );
+            }
             if( is_dot( get_token( tok ) ) )
             {
                 toml_key_t* subkey = new_key( branch );
@@ -97,11 +101,13 @@ toml_key_t* parse_basicquotedkey(
         {
             next_token( tok );
             char escaped[5] = { 0 };
-            int c = parse_escape( tok, escaped );
-            RETURN_ON_FAIL( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) );
-            RETURN_ON_FAIL( c<5, "parsed escape sequence is too long\n" );
+            int c           = parse_escape( tok, escaped );
+            RETURN_IF_FAILED( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) );
+            RETURN_IF_FAILED( c<5,  "parsed escape sequence is too long\n" );
             for( int i=0; i<c; i++ )
+            {
                 id[ idx++ ] = escaped[i];
+            }
             // parse_escape will parse everything and move on to the next token
             // so we call backtrack here to offset the next_token call outside
             backtrack( tok, 1 );
@@ -112,7 +118,9 @@ toml_key_t* parse_basicquotedkey(
             break;
         }
         else
+        {
             id[ idx++ ] = get_token( tok );
+        }
         next_token( tok );
     }
     return NULL;
@@ -125,16 +133,19 @@ toml_key_t* parse_literalquotedkey(
     toml_key_type_t leaf
 )
 {
-    char id[ MAX_ID_LENGTH ] = { 0 };
-    int idx = 0;
+    char    id[ MAX_ID_LENGTH ] = { 0 };
+    int     idx                 = 0;
+
     while( has_token( tok ) )
     {
-        RETURN_ON_FAIL( idx<MAX_ID_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<MAX_ID_LENGTH, "buffer overflow\n" );
         if( is_literalstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             if( is_whitespace( get_token( tok ) ) )
+            {
                 parse_whitespace( tok );
+            }
             if( is_dot( get_token( tok ) ) )
             {
                 toml_key_t* subkey = new_key( branch );
@@ -161,7 +172,9 @@ toml_key_t* parse_literalquotedkey(
             break;
         }
         else
+        {
             id[ idx++ ] = get_token( tok );
+        }
         next_token( tok );
     }
     return NULL;
@@ -177,42 +190,44 @@ toml_key_t* parse_key(
     {
         if( is_equal( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found = while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found = while expecting a key\n" );
             next_token( tok );
             return key;
         }
         else if( is_dot( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found . while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found . while expecting a key\n" );
             next_token( tok );
             return parse_key( tok, key, true );
         }
         else if( is_whitespace( get_token( tok ) ) )
+        {
             parse_whitespace( tok );
+        }
         else if( is_basicstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_basicquotedkey( tok, '=', KEY, KEYLEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse basic quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse basic quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add subkey to key %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add subkey to key %s\n", key->id );
             return parse_key( tok, subkey, false );
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_literalquotedkey( tok, '=', KEY, KEYLEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse literal quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse literal quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add subkey to key %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add subkey to key %s\n", key->id );
             return parse_key( tok, subkey, false );
         }
         else
         {
             toml_key_t* subkey = parse_barekey( tok, '=', KEY, KEYLEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse bare key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse bare key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add subkey to key %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add subkey to key %s\n", key->id );
             return parse_key( tok, subkey, false );
         }
     }
@@ -229,42 +244,44 @@ toml_key_t* parse_table(
     {
         if( is_tableend( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found ] while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found ] while expecting a key\n" );
             next_token( tok );
             return key;
         }
         else if( is_dot( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found . while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found . while expecting a key\n" );
             next_token( tok );
             return parse_table( tok, key, true );
         }
         else if( is_whitespace( get_token( tok ) ) )
+        {
             parse_whitespace( tok );
+        }
         else if( is_basicstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_basicquotedkey( tok, ']', TABLE, TABLELEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse basic quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse basic quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_table( tok, subkey, false );
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_literalquotedkey( tok, ']', TABLE, TABLELEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse literal quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse literal quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_table( tok, subkey, false );
         }
         else
         {
             toml_key_t* subkey = parse_barekey( tok, ']', TABLE, TABLELEAF );
-            RETURN_ON_FAIL( subkey, "failed to parse bare key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse bare key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_table( tok, subkey, false );
         }
     }
@@ -281,44 +298,46 @@ toml_key_t* parse_arraytable(
     {
         if( is_tableend( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found ] while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found ] while expecting a key\n" );
             next_token( tok );
-            RETURN_ON_FAIL( is_tableend( get_token( tok ) ), "found ] while expecting a key\n" );
+            RETURN_IF_FAILED( is_tableend( get_token( tok ) ), "found ] while expecting a key\n" );
             next_token( tok );
             return key;
         }
         else if( is_dot( get_token( tok ) ) )
         {
-            RETURN_ON_FAIL( !expecting, "found . while expecting a key\n" );
+            RETURN_IF_FAILED( !expecting, "found . while expecting a key\n" );
             next_token( tok );
             return parse_arraytable( tok, key, true );
         }
         else if( is_whitespace( get_token( tok ) ) )
+        {
             parse_whitespace( tok );
+        }
         else if( is_basicstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_basicquotedkey( tok, ']', TABLE, ARRAYTABLE );
-            RETURN_ON_FAIL( subkey, "failed to parse basic quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse basic quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_arraytable( tok, subkey, false );
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
             next_token( tok );
             toml_key_t* subkey = parse_literalquotedkey( tok, ']', TABLE, ARRAYTABLE );
-            RETURN_ON_FAIL( subkey, "failed to parse literal quoted key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse literal quoted key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_arraytable( tok, subkey, false );
         }
         else
         {
             toml_key_t* subkey = parse_barekey( tok, ']', TABLE, ARRAYTABLE );
-            RETURN_ON_FAIL( subkey, "failed to parse bare key\n" );
+            RETURN_IF_FAILED( subkey, "failed to parse bare key\n" );
             subkey = add_subkey( key, subkey );
-            RETURN_ON_FAIL( subkey, "failed to add key to subkey %s\n", key->id );
+            RETURN_IF_FAILED( subkey, "failed to add key to subkey %s\n", key->id );
             return parse_arraytable( tok, subkey, false );
         }
     }
@@ -334,7 +353,7 @@ toml_key_t* parse_keyval(
     if( is_commentstart( get_token( tok ) ) )
     {
         bool ok = parse_comment( tok );
-        RETURN_ON_FAIL( ok, "invalid comment\n" );
+        RETURN_IF_FAILED( ok, "invalid comment\n" );
         return key;
     }
     else if( is_whitespace( get_token( tok ) ) )
@@ -356,20 +375,22 @@ toml_key_t* parse_keyval(
         {
             next_token( tok );
             table = parse_arraytable( tok, root, true );
-            RETURN_ON_FAIL( table, "failed to parse array of tables\n" );
+            RETURN_IF_FAILED( table, "failed to parse array of tables\n" );
             // Since an arraytable is a map of key-value pairs, we
             // store it in the `value->arr` attribute of the `key`.
             // Each redefinition marks an new element in that array.
             // The key-value pairs are added to the `subkeys` of a
             // "pseudo" key that lives at `table->value->arr[ table->idx ].
             if( table->value==NULL )
+            {
                 table->value = new_array();
+            }
             table->value->arr[ ++( table->idx ) ] = new_inline_table( new_key( TABLE ) );
         }
         else
         {
             table = parse_table( tok, root, true );
-            RETURN_ON_FAIL( table, "failed to parse table\n" );
+            RETURN_IF_FAILED( table, "failed to parse table\n" );
         }
         return table;
     }
@@ -382,10 +403,10 @@ toml_key_t* parse_keyval(
         tok->newline )
     )
     {
-        toml_key_t* subkey = parse_key( tok, key, true );
-        RETURN_ON_FAIL( subkey, "failed to parse key\n" );
-        toml_value_t* v = parse_value( tok, "# \n" );
-        RETURN_ON_FAIL( v, "failed to parse value\n" );
+        toml_key_t* subkey  = parse_key( tok, key, true );
+        RETURN_IF_FAILED( subkey, "failed to parse key\n" );
+        toml_value_t* v     = parse_value( tok, "# \n" );
+        RETURN_IF_FAILED( v, "failed to parse value\n" );
         // If we parsed an inlinetable, to keep it in sync
         // with our datastructure, we add the keys from the
         // parsed key-value pairs as `subkeys` of the "active"
@@ -396,17 +417,19 @@ toml_key_t* parse_keyval(
         // `KEYLEAF` to prevent re-definition.
         if( v->type==INLINETABLE )
         {
-            toml_key_t* h = ( toml_key_t * )( v->data );
-            subkey->type = KEY;
+            toml_key_t* h   = ( toml_key_t * )( v->data );
+            subkey->type    = KEY;
             for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
             {
                 toml_key_t* e = add_subkey( subkey, *iter );
-                RETURN_ON_FAIL( e, "could not add inline table key %s\n", ( *iter )->id );
+                RETURN_IF_FAILED( e, "could not add inline table key %s\n", ( *iter )->id );
             }
-            subkey->type = KEYLEAF;
+            subkey->type    = KEYLEAF;
         }
         else
-            subkey->value = v;
+        {
+            subkey->value   = v;
+        }
         parse_whitespace( tok );
         return key; 
     }
