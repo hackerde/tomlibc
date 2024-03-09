@@ -9,7 +9,9 @@ int main( int argc, char* argv[], char** envp )
     const char* filename = "sample.toml";
     toml_key_t* toml = toml_load( filename );
     if( !toml )
+    {
         printf( "Could not load toml file: %s\n", filename );
+    }
     toml_key_t* k;
     k = toml_get_key( toml_get_key( toml_get_key( toml, "data" ), "constants" ), "max" );
     if( !k )
@@ -41,7 +43,9 @@ int main( int argc, char* argv[], char** envp )
         {
             k = toml_get_key( ( toml_key_t* )v->data, "email" );
             if( k && k->value->type==STRING )
+            {
                 printf( "Email: %s\n", ( char* )k->value->data );
+            }
         }
     }
     /* Free up the memory after doing stuff */

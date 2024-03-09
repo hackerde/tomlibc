@@ -7,11 +7,11 @@
 
 toml_key_t* new_key( toml_key_type_t type )
 {
-    toml_key_t* k = calloc( 1, sizeof( toml_key_t ) );
-    k->type = type;
-    k->last = NULL;
-    k->value = NULL;
-    k->idx = -1;
+    toml_key_t* k   = calloc( 1, sizeof( toml_key_t ) );
+    k->type         = type;
+    k->last         = NULL;
+    k->value        = NULL;
+    k->idx          = -1;
     memset( k->id, 0, MAX_ID_LENGTH );
     return k;
 }
@@ -24,7 +24,9 @@ toml_key_t* has_subkey(
     for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
     {
         if ( strcmp( ( *iter )->id, subkey->id )==0 )
+        {
             return *iter;
+        }
     }
     return NULL;
 }
@@ -53,7 +55,7 @@ toml_key_t* add_subkey(
         }
         else
         {
-            RETURN_ON_FAIL( 0,
+            RETURN_IF_FAILED( 0,
                 "failed to add subkey\n"
                 "existing subkey - key: %s type: %d\n"
                 "new subkey: key: %s type: %d\n", 
@@ -81,7 +83,9 @@ toml_key_t* add_subkey(
         }
     }
     else
+    {
         LOG_ERR( "buffer overflow\n" );
+    }
     return NULL;
 }
 
@@ -97,25 +101,37 @@ bool compatible_keys(
     // `a = b`
     // `a = c`
     if( existing==KEYLEAF )
+    {
         return false;
+    }
     // `[a.b]`
     // `[a.b]`
     if( existing==TABLELEAF && current==TABLELEAF )
+    {
         return false;
+    }
     // `[a.b] or b.c = d`
     // `[a.b.e] or [b.e]`
     if( ( existing==TABLELEAF || existing==KEY ) && current==TABLE )
+    {
         return true;
+    }
     // `[a.b]`
     // `[a]`
     if( existing==TABLE && current==TABLELEAF )
+    {
         return true;
+    }
     // `[[t]]`
     // `[t.s]`
     if( existing==ARRAYTABLE && current==TABLE )
+    {
         return true;
+    }
     if( current==existing )
+    {
         return true;
+    }
     return false;
 }
 
@@ -125,9 +141,13 @@ void delete_key( toml_key_t* key )
     if( key->last )
     {
         for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
+        {
             delete_key( *iter );
+        }
     }
     if( key->value )
+    {
         delete_value( key->value );
+    }
     free( key );
 }

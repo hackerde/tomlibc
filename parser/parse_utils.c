@@ -136,8 +136,7 @@ bool is_numberend( char c, const char* end )
 {
     for( int i=0; i<strlen( end ); i++ )
     {
-        if ( c==end[ i ] )
-            return true;
+        if ( c==end[ i ] ) return true;
     }
     return false;
 }
@@ -215,7 +214,7 @@ bool is_date(
         case 11:
             return ( day>=1 && day<=31 );
         default:
-            false;
+            return false;
     }
     return false;
 }
