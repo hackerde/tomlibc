@@ -50,7 +50,9 @@ toml_key_t* add_subkey(
             // re-defining a TABLE as a TABLELEAF
             // is allowed only once
             if( subkey->type==TABLELEAF )
+            {
                 s->type = TABLELEAF;
+            }
             return s;
         }
         else
@@ -72,7 +74,7 @@ toml_key_t* add_subkey(
             // and re-defining an ARRAYTABLE means adding another map
             // of key-value to the list, we use the `value->arr`
             // attribute of the key to store each map of key-values
-            toml_key_t* a = add_subkey( key->value->arr[key->idx]->data, subkey );
+            toml_key_t* a = add_subkey( key->value->arr[ key->idx ]->data, subkey );
             return a;
         }
         else

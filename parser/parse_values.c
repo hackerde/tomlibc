@@ -41,6 +41,7 @@ char* parse_basicstring(
                         value[ idx++ ]  = '"';
                         next_token( tok );
                     }
+                    RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
                     if( is_basicstringstart( get_token( tok ) ) )
                     {
                         value[ idx++ ]  = '"';
@@ -66,8 +67,8 @@ char* parse_basicstring(
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
-            char escaped[5] = { 0 };
-            int c           = parse_escape( tok, escaped );
+            char escaped[ 5 ] = { 0 };
+            int c             = parse_escape( tok, escaped, 5 );
             if( multi && c==0 )
             {
                 bool hit    = false;
@@ -93,6 +94,7 @@ char* parse_basicstring(
                 for( int i=0; i<c; i++ )
                 {
                     value[ idx++ ] = escaped[i];
+                    RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
                 }
                 // parse_escape will parse everything and move on to the next token
                 // so we call backtrack here to offset the next_token call outside
@@ -110,7 +112,9 @@ char* parse_basicstring(
             break;
         }
         else
+        {
             value[ idx++ ] = get_token( tok );
+        }
         next_token( tok );
     }
     return NULL;
@@ -147,6 +151,7 @@ char* parse_literalstring(
                         value[ idx++ ]  = '\'';
                         next_token( tok );
                     }
+                    RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
                     if( is_literalstringstart( get_token( tok ) ) )
                     {
                         value[ idx++ ]  = '\'';
@@ -799,7 +804,8 @@ bool parse_newline( tokenizer_t* tok )
 
 int parse_unicode(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 )
 {
     int     digits      = 0;
@@ -837,28 +843,48 @@ int parse_unicode(
                 // UTF-8 encoding
                 if( num>=0x0 && num<=0x7F )
                 {
-                    escaped[0] = ( num ) & 0b01111111;
+                    if( len<1 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( num ) & 0b01111111;
                     return 1;
                 }
                 else if( num>=0x80 && num<=0x7FF )
                 {
-                    escaped[0] = ( 0b11000000 | ( num >> 6 ) )  & 0b11011111;
-                    escaped[1] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<2 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11000000 | ( num >> 6 ) )  & 0b11011111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 2;
                 }
                 else if( ( num>=0x800 && num<=0xFFFF ) )
                 {
-                    escaped[0] = ( 0b11100000 | ( num >> 12 ) ) & 0b11101111;
-                    escaped[1] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
-                    escaped[2] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<3 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11100000 | ( num >> 12 ) ) & 0b11101111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[ 2 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 3;
                 }
                 else
                 {
-                    escaped[0] = ( 0b11110000 | ( num >> 18 ) ) & 0b11110111;
-                    escaped[1] = ( 0b10000000 | ( num >> 12 ) ) & 0b10111111;
-                    escaped[2] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
-                    escaped[3] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<4 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11110000 | ( num >> 18 ) ) & 0b11110111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num >> 12 ) ) & 0b10111111;
+                    escaped[ 2 ] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[ 3 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 4;
                 }
                 return 0;
@@ -873,66 +899,71 @@ int parse_unicode(
     return 0;
 }
 
-// TODO: unused
 int parse_escape(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 )
 {
+    if( len<1 )
+    {
+        LOG_ERR( "escaped array is not long enough\n" );
+        return 0;
+    }
     switch ( get_token( tok ) )
     {
         case 'b':
         {
-            escaped[0]  = '\b';
+            escaped[ 0 ]  = '\b';
             next_token( tok );
             return 1;
         }
         case 't':
         {
-            escaped[0]  = '\t';
+            escaped[ 0 ]  = '\t';
             next_token( tok );
             return 1;
         }
         case 'n':
         {
-            escaped[0]  = '\n';
+            escaped[ 0 ]  = '\n';
             next_token( tok );
             return 1;
         }
         case 'f':
         {
-            escaped[0]  = '\f';
+            escaped[ 0 ]  = '\f';
             next_token( tok );
             return 1;
         }
         case 'r':
         {
-            escaped[0]  = '\r';
+            escaped[ 0 ]  = '\r';
             next_token( tok );
             return 1;
         }
         case '"':
         {
-            escaped[0]  = '\"';
+            escaped[ 0 ]  = '\"';
             next_token( tok );
             return 1;
         }
         case '\\':
         {
-            escaped[0]  = '\\';
+            escaped[ 0 ]  = '\\';
             next_token( tok );
             return 1;
         }
         case 'u':
         {
             next_token( tok );
-            int u       = parse_unicode( tok, escaped );
+            int u        = parse_unicode( tok, escaped, len );
             return u;
         }
         case 'U':
         {
             next_token( tok );
-            int u       = parse_unicode( tok, escaped );
+            int u        = parse_unicode( tok, escaped, len );
             return u;
         }
         default:
@@ -1026,10 +1057,10 @@ number_t* parse_number(
             if( n->precision>0 ) n->precision--;
             if( n->type==INT && num!=0 )
             {
-                RETURN_IF_FAILED( value[0]!='0', "cannot have leading zero for integers" );
-                if( value[0]=='+' || value[0]=='-' )
+                RETURN_IF_FAILED( value[ 0 ]!='0', "cannot have leading zero for integers" );
+                if( value[ 0 ]=='+' || value[ 0 ]=='-' )
                 {
-                    RETURN_IF_FAILED( value[1]!='0', "cannot have leading zero for signed integers" );
+                    RETURN_IF_FAILED( value[ 1 ]!='0', "cannot have leading zero for signed integers" );
                 }
             }
             return n;
@@ -1073,6 +1104,7 @@ number_t* parse_number(
                 n->type         = FLOAT;
                 n->precision    = 1;
             }
+            RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
             next_token( tok );
             if( is_digit( get_token( tok ) ) && is_digit( get_prev_prev( tok ) ) )
             {
@@ -1129,10 +1161,10 @@ number_t* parse_number(
     if( n->precision>0 ) n->precision--;
     if( n->type==INT && num!=0 )
     {
-        RETURN_IF_FAILED( value[0]!='0', "cannot have leading zero for integers" );
-        if( value[0]=='+' || value[0]=='-' )
+        RETURN_IF_FAILED( value[ 0 ]!='0', "cannot have leading zero for integers" );
+        if( value[ 0 ]=='+' || value[ 0 ]=='-' )
         {
-            RETURN_IF_FAILED( value[1]!='0', "cannot have leading zero for signed integers" );
+            RETURN_IF_FAILED( value[ 1 ]!='0', "cannot have leading zero for signed integers" );
         }
     }
     return n;

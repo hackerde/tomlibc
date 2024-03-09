@@ -100,13 +100,14 @@ toml_key_t* parse_basicquotedkey(
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
-            char escaped[5] = { 0 };
-            int c           = parse_escape( tok, escaped );
+            char escaped[ 5 ] = { 0 };
+            int c             = parse_escape( tok, escaped, 5 );
             RETURN_IF_FAILED( c!=0, "unknown escape sequence \\%c\n", get_token( tok ) );
             RETURN_IF_FAILED( c<5,  "parsed escape sequence is too long\n" );
             for( int i=0; i<c; i++ )
             {
-                id[ idx++ ] = escaped[i];
+                id[ idx++ ] = escaped[ i ];
+                RETURN_IF_FAILED( idx<MAX_ID_LENGTH, "buffer overflow\n" );
             }
             // parse_escape will parse everything and move on to the next token
             // so we call backtrack here to offset the next_token call outside
@@ -385,6 +386,7 @@ toml_key_t* parse_keyval(
             {
                 table->value = new_array();
             }
+            RETURN_IF_FAILED( table->idx<MAX_ARRAY_LENGTH-1, "buffer overflow\n" );
             table->value->arr[ ++( table->idx ) ] = new_inline_table( new_key( TABLE ) );
         }
         else

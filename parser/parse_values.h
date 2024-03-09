@@ -52,12 +52,14 @@ toml_key_t* parse_inlinetable   ( tokenizer_t* tok );
 
 int parse_escape(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 );
 
 int parse_unicode(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 );
 
 char* parse_basicstring(
