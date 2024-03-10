@@ -28,7 +28,7 @@ struct datetime
 {
     struct tm*          dt;
     toml_value_type_t   type;
-    char*               format;
+    char                format[ TOML_MAX_DATE_FORMAT ];
     int                 millis;
 };
 
@@ -52,12 +52,14 @@ toml_key_t* parse_inlinetable   ( tokenizer_t* tok );
 
 int parse_escape(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 );
 
 int parse_unicode(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 );
 
 char* parse_basicstring(

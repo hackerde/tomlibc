@@ -3,10 +3,11 @@
 
 #include <stdbool.h>
 
-#define MAX_ID_LENGTH       512
-#define MAX_NUM_SUBKEYS     1024
-#define MAX_STRING_LENGTH   512
-#define MAX_ARRAY_LENGTH    50
+#define TOML_MAX_DATE_FORMAT    64
+#define TOML_MAX_ID_LENGTH      256
+#define TOML_MAX_SUBKEYS        1024
+#define TOML_MAX_ARRAY_LENGTH   1024
+#define TOML_MAX_STRING_LENGTH  4096
 
 /*
     Enum `toml_value_type` represents the set of value
@@ -16,16 +17,16 @@
 typedef enum toml_value_type toml_value_type_t;
 enum toml_value_type
 {
-    STRING,
-    INT,
-    FLOAT,
-    BOOL,
-    DATETIME,
-    DATETIMELOCAL,
-    DATELOCAL,
-    TIMELOCAL,
-    ARRAY,
-    INLINETABLE,
+    TOML_STRING,
+    TOML_INT,
+    TOML_FLOAT,
+    TOML_BOOL,
+    TOML_DATETIME,
+    TOML_DATETIMELOCAL,
+    TOML_DATELOCAL,
+    TOML_TIMELOCAL,
+    TOML_ARRAY,
+    TOML_INLINETABLE,
 };
 
 /*
@@ -45,7 +46,7 @@ struct toml_value
     int                 precision;
     bool                scientific;
     /* used for printing datetime values */
-    char*               format;
+    char                format[ TOML_MAX_DATE_FORMAT ];
 };
 
 /*
@@ -57,15 +58,15 @@ typedef enum toml_key_type toml_key_type_t;
 enum toml_key_type
 {
     /* `[a.b]` -> a */
-    TABLE,
+    TOML_TABLE,
     /* `j.k = v` -> j */
-    KEY,
+    TOML_KEY,
     /* `[[t]]` -> t */
-    ARRAYTABLE,
+    TOML_ARRAYTABLE,
     /* `[a.b]` -> b */
-    TABLELEAF,
+    TOML_TABLELEAF,
     /* `j.k = v` -> k */
-    KEYLEAF,
+    TOML_KEYLEAF,
 };
 
 /*
@@ -79,9 +80,9 @@ struct toml_key
     /* key type as described above */
     toml_key_type_t type;
     /* identifier */
-    char            id[ MAX_ID_LENGTH ];
+    char            id[ TOML_MAX_ID_LENGTH ];
     /* list of subkeys */
-    toml_key_t*     subkeys[ MAX_NUM_SUBKEYS ];
+    toml_key_t*     subkeys[ TOML_MAX_SUBKEYS ];
     /* pointer to the last added subkey */
     toml_key_t**    last;
     /* value associated with this key */

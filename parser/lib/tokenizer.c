@@ -102,6 +102,14 @@ void backtrack(
     }
 }
 
+long get_input_size( tokenizer_t* tok )
+{
+    fseek( tok->stream, 0L, SEEK_END );
+    long sz = ftell( tok->stream );
+    fseek( tok->stream, tok->cursor, SEEK_SET );
+    return sz;
+}
+
 bool has_token( tokenizer_t* tok )
 {
     return tok->has_token;

@@ -47,7 +47,7 @@ static inline void string_dump( const char* s )
 
 toml_key_t* toml_load( const char* file )
 {
-    toml_key_t* root = new_key( TABLE );
+    toml_key_t* root = new_key( TOML_TABLE );
     memcpy( root->id, "root", strlen( "root" ) );
 
     FILE* stream;
@@ -61,7 +61,11 @@ toml_key_t* toml_load( const char* file )
         stream = stdin;
         file = "stdin";
     }
+    // Max file size - 1GB
+    #define MAX_FILE_SIZE 1073741824
     tokenizer_t* tok = new_tokenizer( stream );
+    RETURN_IF_FAILED( get_input_size( tok )<MAX_FILE_SIZE,
+                      "Input from %s is too big\n", file );
     next_token( tok );
 
     toml_key_t* key = root;
@@ -69,8 +73,8 @@ toml_key_t* toml_load( const char* file )
     {
         key = parse_keyval( tok, key, root );
         RETURN_IF_FAILED( key, "Encountered an error while parsing %s\n"
-                        "At line %d column %d\n",
-                        file, tok->line+1, tok->col );
+                          "At line %d column %d\n",
+                          file, tok->line+1, tok->col );
     }
 
     delete_tokenizer( tok );
@@ -80,14 +84,14 @@ toml_key_t* toml_load( const char* file )
 
 void toml_key_dump( toml_key_t* k )
 {
-    if( k->type==KEYLEAF && k->value!=NULL && k->value->type!=INLINETABLE )
+    if( k->type==TOML_KEYLEAF && k->value!=NULL && k->value->type!=TOML_INLINETABLE )
     {
         printf( "\"" );
         string_dump( k->id );
         printf( "\": " );
         toml_value_dump( k->value );
     }
-    else if( k->type==ARRAYTABLE )
+    else if( k->type==TOML_ARRAYTABLE )
     {
         printf( "\"" );
         string_dump( k->id );
@@ -123,14 +127,14 @@ void toml_value_dump( toml_value_t* v )
 {
     switch ( v->type )
     {
-        case STRING:
+        case TOML_STRING:
         {
             printf( "{\"type\": \"string\", \"value\": \"" );
             string_dump( ( char* )v->data );
             printf( "\"}" );
             break;
         }
-        case FLOAT:
+        case TOML_FLOAT:
         {
             printf( "{\"type\": \"float\", \"value\": " );
             double f = *( double* )( v->data );
@@ -160,13 +164,13 @@ void toml_value_dump( toml_value_t* v )
             }
             break;
         }
-        case INT:
+        case TOML_INT:
         {
             printf( "{\"type\": \"integer\", \"value\": " );
             printf( "\"%.0lf\"}", *( double* )( v->data ) );
             break;
         }
-        case BOOL:
+        case TOML_BOOL:
         {
             printf( "{\"type\": \"bool\", \"value\": " );
             if( *( double* )( v->data ) )
@@ -179,7 +183,7 @@ void toml_value_dump( toml_value_t* v )
             }
             break;
         }
-        case DATETIME:
+        case TOML_DATETIME:
         {
             printf( "{\"type\": \"datetime\", \"value\": " );
             char buf[ 255 ] = { 0 };
@@ -187,7 +191,7 @@ void toml_value_dump( toml_value_t* v )
             printf( "\"%s\"}", buf);
             break;
         }
-        case DATETIMELOCAL:
+        case TOML_DATETIMELOCAL:
         {
             printf( "{\"type\": \"datetime-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
@@ -195,7 +199,7 @@ void toml_value_dump( toml_value_t* v )
             printf( "\"%s\"}", buf );
             break;
         }
-        case DATELOCAL:
+        case TOML_DATELOCAL:
         {
             printf( "{\"type\": \"date-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
@@ -203,7 +207,7 @@ void toml_value_dump( toml_value_t* v )
             printf( "\"%s\"}", buf );
             break;
         }
-        case TIMELOCAL:
+        case TOML_TIMELOCAL:
         {
             printf( "{\"type\": \"time-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
@@ -211,7 +215,7 @@ void toml_value_dump( toml_value_t* v )
             printf( "\"%s\"}", buf );
             break;
         }
-        case ARRAY:
+        case TOML_ARRAY:
         {
             printf( "[\n" );
             for( toml_value_t** iter=v->arr; *iter!=NULL; iter++ )
@@ -225,7 +229,7 @@ void toml_value_dump( toml_value_t* v )
             printf("\n]");
             break;
         }
-        case INLINETABLE:
+        case TOML_INLINETABLE:
         {
             printf( "{\n" );
             toml_key_t* k = ( toml_key_t* )( v->data );

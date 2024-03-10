@@ -19,7 +19,7 @@ char* parse_basicstring(
     int idx = 0;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_basicstringstart( get_token( tok ) ) )
         {
             if( !multi )
@@ -41,6 +41,7 @@ char* parse_basicstring(
                         value[ idx++ ]  = '"';
                         next_token( tok );
                     }
+                    RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
                     if( is_basicstringstart( get_token( tok ) ) )
                     {
                         value[ idx++ ]  = '"';
@@ -66,8 +67,8 @@ char* parse_basicstring(
         else if( is_escape( get_token( tok ) ) )
         {
             next_token( tok );
-            char escaped[5] = { 0 };
-            int c           = parse_escape( tok, escaped );
+            char escaped[ 5 ] = { 0 };
+            int c             = parse_escape( tok, escaped, 5 );
             if( multi && c==0 )
             {
                 bool hit    = false;
@@ -93,6 +94,7 @@ char* parse_basicstring(
                 for( int i=0; i<c; i++ )
                 {
                     value[ idx++ ] = escaped[i];
+                    RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
                 }
                 // parse_escape will parse everything and move on to the next token
                 // so we call backtrack here to offset the next_token call outside
@@ -110,7 +112,9 @@ char* parse_basicstring(
             break;
         }
         else
+        {
             value[ idx++ ] = get_token( tok );
+        }
         next_token( tok );
     }
     return NULL;
@@ -125,7 +129,7 @@ char* parse_literalstring(
     int idx = 0;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_literalstringstart( get_token( tok ) ) )
         {
             if( !multi )
@@ -147,6 +151,7 @@ char* parse_literalstring(
                         value[ idx++ ]  = '\'';
                         next_token( tok );
                     }
+                    RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
                     if( is_literalstringstart( get_token( tok ) ) )
                     {
                         value[ idx++ ]  = '\'';
@@ -195,7 +200,7 @@ datetime_t* parse_datetime(
     int         spaces  = 0;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
         if( ( is_whitespace( get_token( tok ) ) && spaces ) ||
             ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) ) )
         {
@@ -284,13 +289,14 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIME;
+                dt->type    = TOML_DATETIME;
                 dt->dt      = time;
                 mlen        = ( mlen>3 ) ? mlen : 3;
                 dt->millis  = millis;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+2 );
-                int c       = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+1,
-                                        "%%Y-%%m-%%dT%%H:%%M:%%S.%d%c%s:%s", millis, off_s[ 0 ], off_h, off_m );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%d%c%s:%s",
+                                        millis, off_s[ 0 ], off_h, off_m );
                 return dt;
             }
             // DATETIME with offset
@@ -327,11 +333,12 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIME;
+                dt->type    = TOML_DATETIME;
                 dt->dt      = time;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+2 );
-                int c       = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+1, 
-                                        "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s", off_s[ 0 ], off_h, off_m );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s",
+                                        off_s[ 0 ], off_h, off_m );
                 return dt;
             }
             // DATETIME with millisecond and timezone
@@ -363,13 +370,13 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIME;
+                dt->type    = TOML_DATETIME;
                 dt->dt      = time;
                 mlen        = ( mlen>3 ) ? mlen : 3;
                 dt->millis  = millis;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+2 );
-                int c       = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+1,
-                                        "%%Y-%%m-%%dT%%H:%%M:%%S.%dZ", millis );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%dZ", millis );
                 return dt;
             }
             // DATETIMELOCAL with millisecond
@@ -397,13 +404,13 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIMELOCAL;
+                dt->type    = TOML_DATETIMELOCAL;
                 dt->dt      = time;
                 mlen        = ( mlen>3 ) ? mlen : 3;
                 dt->millis  = millis;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+2 );
-                int c       = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+1,
-                                        "%%Y-%%m-%%dT%%H:%%M:%%S.%d", millis );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%d", millis );
                 return dt;
             }
             // DATETIME with timezone
@@ -435,11 +442,11 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIME;
+                dt->type    = TOML_DATETIME;
                 dt->dt      = time;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%SZ" )+2 );
-                int c       = snprintf( dt->format, strlen( "%Y-%m-%dT%H:%M:%SZ" )+1,
-                                        "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%SZ" )+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
                 return dt;
             }
             // DATETIMELOCAL
@@ -463,10 +470,11 @@ datetime_t* parse_datetime(
                                     "datetime has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATETIMELOCAL;
+                dt->type    = TOML_DATETIMELOCAL;
                 dt->dt      = time;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%dT%H:%M:%S" )+1 );
-                memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", strlen( "%Y-%m-%dT%H:%M:%S" ) );
+                int sz      = strlen( "%Y-%m-%dT%H:%M:%S" );
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", sz );
                 return dt;
             }
             // DATELOCAL
@@ -481,10 +489,11 @@ datetime_t* parse_datetime(
                                     "date has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = DATELOCAL;
+                dt->type    = TOML_DATELOCAL;
                 dt->dt      = time;
-                dt->format  = calloc( 1, strlen( "%Y-%m-%d" )+1 );
-                memcpy( dt->format, "%Y-%m-%d", strlen( "%Y-%m-%d" ) );
+                int sz      = strlen( "%Y-%m-%d" );
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                memcpy( dt->format, "%Y-%m-%d", sz );
                 return dt;
             }
             // TIMELOCAL with millisecond
@@ -506,13 +515,13 @@ datetime_t* parse_datetime(
                                     "time has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = TIMELOCAL;
+                dt->type    = TOML_TIMELOCAL;
                 dt->dt      = time;
                 mlen        = ( mlen>3 ) ? mlen : 3;
                 dt->millis  = millis;
-                dt->format  = calloc( 1, strlen( "%H:%M:%S" )+mlen+2 );
-                int c       = snprintf( dt->format, strlen( "%H:%M:%S." )+mlen+1,
-                                        "%%H:%%M:%%S.%d", millis );
+                int sz      = strlen( "%H:%M:%S." )+mlen+1;
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                int c       = snprintf( dt->format, sz, "%%H:%%M:%%S.%d", millis );
                 return dt;
             }
             // TIMELOCAL
@@ -530,10 +539,11 @@ datetime_t* parse_datetime(
                                     "time has incorrect number of characters\n" );
 
                 dt          = calloc( 1, sizeof( datetime_t ) );
-                dt->type    = TIMELOCAL;
+                dt->type    = TOML_TIMELOCAL;
                 dt->dt      = time;
-                dt->format  = calloc( 1, strlen( "%H:%M:%S" )+1 );
-                memcpy( dt->format, "%H:%M:%S", strlen( "%H:%M:%S" ) );
+                int sz      = strlen( "%H:%M:%S" );
+                RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
+                memcpy( dt->format, "%H:%M:%S", sz );
                 return dt;
             }
             #undef CHECK_TIME
@@ -606,7 +616,7 @@ toml_value_t* parse_array(
     bool    sep = true;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<MAX_ARRAY_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<TOML_MAX_ARRAY_LENGTH, "buffer overflow\n" );
         if( is_arrayend( get_token( tok ) ) )
         {
             next_token( tok );
@@ -689,7 +699,7 @@ double parse_boolean( tokenizer_t* tok )
 
 toml_key_t* parse_inlinetable( tokenizer_t* tok )
 {
-    toml_key_t* keys    = new_key( TABLE );
+    toml_key_t* keys    = new_key( TOML_TABLE );
     bool        sep     = true;
     bool        first   = true;
     while( has_token( tok ) )
@@ -723,16 +733,16 @@ toml_key_t* parse_inlinetable( tokenizer_t* tok )
             toml_value_t*   v = parse_value( tok, ", }" );
             RETURN_IF_FAILED( v, "failed to parse value\n" );
             // refer to inline table comment in `keys.c`
-            if( v->type==INLINETABLE )
+            if( v->type==TOML_INLINETABLE )
             {
                 toml_key_t* h   = ( toml_key_t * )( v->data );
-                k->type         = KEY;
+                k->type         = TOML_KEY;
                 for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
                 {
                     toml_key_t* e = add_subkey( k, *iter );
                     RETURN_IF_FAILED( e, "could not add inline table key %s\n", ( *iter )->id );
                 }
-                k->type         = KEYLEAF;
+                k->type         = TOML_KEYLEAF;
             }
             else
             {
@@ -799,7 +809,8 @@ bool parse_newline( tokenizer_t* tok )
 
 int parse_unicode(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 )
 {
     int     digits      = 0;
@@ -837,28 +848,48 @@ int parse_unicode(
                 // UTF-8 encoding
                 if( num>=0x0 && num<=0x7F )
                 {
-                    escaped[0] = ( num ) & 0b01111111;
+                    if( len<1 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( num ) & 0b01111111;
                     return 1;
                 }
                 else if( num>=0x80 && num<=0x7FF )
                 {
-                    escaped[0] = ( 0b11000000 | ( num >> 6 ) )  & 0b11011111;
-                    escaped[1] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<2 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11000000 | ( num >> 6 ) )  & 0b11011111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 2;
                 }
                 else if( ( num>=0x800 && num<=0xFFFF ) )
                 {
-                    escaped[0] = ( 0b11100000 | ( num >> 12 ) ) & 0b11101111;
-                    escaped[1] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
-                    escaped[2] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<3 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11100000 | ( num >> 12 ) ) & 0b11101111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[ 2 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 3;
                 }
                 else
                 {
-                    escaped[0] = ( 0b11110000 | ( num >> 18 ) ) & 0b11110111;
-                    escaped[1] = ( 0b10000000 | ( num >> 12 ) ) & 0b10111111;
-                    escaped[2] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
-                    escaped[3] = ( 0b10000000 | ( num ) )       & 0b10111111;
+                    if( len<4 )
+                    {
+                        LOG_ERR( "escaped array is not long enough\n" );
+                        break;
+                    }
+                    escaped[ 0 ] = ( 0b11110000 | ( num >> 18 ) ) & 0b11110111;
+                    escaped[ 1 ] = ( 0b10000000 | ( num >> 12 ) ) & 0b10111111;
+                    escaped[ 2 ] = ( 0b10000000 | ( num >> 6 ) )  & 0b10111111;
+                    escaped[ 3 ] = ( 0b10000000 | ( num ) )       & 0b10111111;
                     return 4;
                 }
                 return 0;
@@ -873,66 +904,71 @@ int parse_unicode(
     return 0;
 }
 
-// TODO: unused
 int parse_escape(
     tokenizer_t*    tok,
-    char*           escaped
+    char*           escaped,
+    int             len
 )
 {
+    if( len<1 )
+    {
+        LOG_ERR( "escaped array is not long enough\n" );
+        return 0;
+    }
     switch ( get_token( tok ) )
     {
         case 'b':
         {
-            escaped[0]  = '\b';
+            escaped[ 0 ]  = '\b';
             next_token( tok );
             return 1;
         }
         case 't':
         {
-            escaped[0]  = '\t';
+            escaped[ 0 ]  = '\t';
             next_token( tok );
             return 1;
         }
         case 'n':
         {
-            escaped[0]  = '\n';
+            escaped[ 0 ]  = '\n';
             next_token( tok );
             return 1;
         }
         case 'f':
         {
-            escaped[0]  = '\f';
+            escaped[ 0 ]  = '\f';
             next_token( tok );
             return 1;
         }
         case 'r':
         {
-            escaped[0]  = '\r';
+            escaped[ 0 ]  = '\r';
             next_token( tok );
             return 1;
         }
         case '"':
         {
-            escaped[0]  = '\"';
+            escaped[ 0 ]  = '\"';
             next_token( tok );
             return 1;
         }
         case '\\':
         {
-            escaped[0]  = '\\';
+            escaped[ 0 ]  = '\\';
             next_token( tok );
             return 1;
         }
         case 'u':
         {
             next_token( tok );
-            int u       = parse_unicode( tok, escaped );
+            int u        = parse_unicode( tok, escaped, len );
             return u;
         }
         case 'U':
         {
             next_token( tok );
-            int u       = parse_unicode( tok, escaped );
+            int u        = parse_unicode( tok, escaped, len );
             return u;
         }
         default:
@@ -952,7 +988,7 @@ double parse_base_uint(
     double  d   = -1;
     while( has_token( tok ) )
     {
-        if( idx>=MAX_STRING_LENGTH )
+        if( idx>=TOML_MAX_STRING_LENGTH )
         {
             LOG_ERR( "buffer overflow\n" );
             break;
@@ -1011,12 +1047,12 @@ number_t* parse_number(
 {
     int         idx = 0;
     number_t*   n   = calloc( 1, sizeof( number_t ) );
-    n->type         = INT;
+    n->type         = TOML_INT;
     n->scientific   = false;
     n->precision    = 0;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<MAX_STRING_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
         if( is_numberend( get_token( tok ), num_end ) )
         {
             char*   end;
@@ -1024,12 +1060,12 @@ number_t* parse_number(
             RETURN_IF_FAILED( end==value+idx, "could not convert %s to double\n", value );
             *d          = num;
             if( n->precision>0 ) n->precision--;
-            if( n->type==INT && num!=0 )
+            if( n->type==TOML_INT && num!=0 )
             {
-                RETURN_IF_FAILED( value[0]!='0', "cannot have leading zero for integers" );
-                if( value[0]=='+' || value[0]=='-' )
+                RETURN_IF_FAILED( value[ 0 ]!='0', "cannot have leading zero for integers" );
+                if( value[ 0 ]=='+' || value[ 0 ]=='-' )
                 {
-                    RETURN_IF_FAILED( value[1]!='0', "cannot have leading zero for signed integers" );
+                    RETURN_IF_FAILED( value[ 1 ]!='0', "cannot have leading zero for signed integers" );
                 }
             }
             return n;
@@ -1070,9 +1106,10 @@ number_t* parse_number(
             if( is_decimalpoint( get_token( tok ) ) )
             {
                 value[ idx++ ]  = get_token( tok );
-                n->type         = FLOAT;
+                n->type         = TOML_FLOAT;
                 n->precision    = 1;
             }
+            RETURN_IF_FAILED( idx<TOML_MAX_STRING_LENGTH, "buffer overflow\n" );
             next_token( tok );
             if( is_digit( get_token( tok ) ) && is_digit( get_prev_prev( tok ) ) )
             {
@@ -1092,7 +1129,7 @@ number_t* parse_number(
                 double f        = parse_inf_nan( tok, ( get_prev( tok )=='-' ) );
                 if( f==0 ) break;
                 *d              = f;
-                n->type         = FLOAT;
+                n->type         = TOML_FLOAT;
                 n->precision    = 0;
                 return n;
             }
@@ -1116,7 +1153,7 @@ number_t* parse_number(
             if( n->precision>0 ) n->precision++;
             if( get_token( tok )=='e' || get_token( tok )=='E' )
             {
-                n->type         = FLOAT;
+                n->type         = TOML_FLOAT;
                 n->scientific   = true;
             }
         }
@@ -1127,12 +1164,12 @@ number_t* parse_number(
     RETURN_IF_FAILED( end==value+idx, "could not convert %s to double\n", value );
     *d          = num;
     if( n->precision>0 ) n->precision--;
-    if( n->type==INT && num!=0 )
+    if( n->type==TOML_INT && num!=0 )
     {
-        RETURN_IF_FAILED( value[0]!='0', "cannot have leading zero for integers" );
-        if( value[0]=='+' || value[0]=='-' )
+        RETURN_IF_FAILED( value[ 0 ]!='0', "cannot have leading zero for integers" );
+        if( value[ 0 ]=='+' || value[ 0 ]=='-' )
         {
-            RETURN_IF_FAILED( value[1]!='0', "cannot have leading zero for signed integers" );
+            RETURN_IF_FAILED( value[ 1 ]!='0', "cannot have leading zero for signed integers" );
         }
     }
     return n;
@@ -1153,7 +1190,7 @@ toml_value_t* parse_value(
         }
         else if( is_basicstringstart( get_token( tok ) ) )
         {
-            char    value[ MAX_STRING_LENGTH ] = { 0 };
+            char    value[ TOML_MAX_STRING_LENGTH ] = { 0 };
             char*   s;
             next_token( tok );
             if( has_token( tok ) && is_basicstringstart( get_token( tok ) ) )
@@ -1184,7 +1221,7 @@ toml_value_t* parse_value(
         }
         else if( is_literalstringstart( get_token( tok ) ) )
         {
-            char    value[ MAX_STRING_LENGTH ] = { 0 };
+            char    value[ TOML_MAX_STRING_LENGTH ] = { 0 };
             char*   s;
             next_token( tok );
             if( has_token( tok ) && is_literalstringstart( get_token( tok ) ) )
@@ -1215,7 +1252,7 @@ toml_value_t* parse_value(
         }
         else if( is_numberstart( get_token( tok ) ) )
         {
-            char value[ MAX_STRING_LENGTH ] = { 0 };
+            char value[ TOML_MAX_STRING_LENGTH ] = { 0 };
             // try parsing date time
             bool a = next_token( tok );
             bool b = next_token( tok );
@@ -1225,6 +1262,8 @@ toml_value_t* parse_value(
                 datetime_t* dt  = parse_datetime( tok, value, num_end );
                 RETURN_IF_FAILED( dt, "could not parse time\n" );
                 toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
+                free( dt->dt );
+                free( dt );
                 return v;
             }
             else if( !is_digit( get_prev( tok ) ) || !is_digit( get_token( tok ) ) )
@@ -1241,6 +1280,8 @@ toml_value_t* parse_value(
                     datetime_t* dt  = parse_datetime( tok, value, num_end );
                     RETURN_IF_FAILED( dt, "could not parse datetime\n" );
                     toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
+                    free( dt->dt );
+                    free( dt );
                     return v;
                 }
                 else
@@ -1252,6 +1293,8 @@ toml_value_t* parse_value(
             number_t* n         = parse_number( tok, value, d, num_end );
             RETURN_IF_FAILED( n, "could not parse number\n" );
             toml_value_t* v     = new_number( d, n->type, n->precision, n->scientific );
+            free( d );
+            free( n );
             return v;
         }
         else if( is_arraystart( get_token( tok ) ) )
@@ -1274,14 +1317,14 @@ toml_value_t* parse_value(
         {
             double b            = parse_boolean( tok );
             RETURN_IF_FAILED( ( b==1 || b==0 ), "expecting true or false but could not parse\n" );
-            toml_value_t* v     = new_number( &b, BOOL, 0, false );
+            toml_value_t* v     = new_number( &b, TOML_BOOL, 0, false );
             return v;
         }
         else if( get_token( tok )=='i' || get_token( tok )=='n' )
         {
             double f            = parse_inf_nan( tok, false );
             RETURN_IF_FAILED( f, "expecting inf or nan but could not parse\n" );
-            toml_value_t* v     = new_number( &f, FLOAT, 0, false );
+            toml_value_t* v     = new_number( &f, TOML_FLOAT, 0, false );
             return v;
         }
         else
