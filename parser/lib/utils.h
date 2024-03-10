@@ -22,7 +22,7 @@
     if it fails, returns NULL from the location
     where it is called.
 */
-#define RETURN_IF_FAILED( COND, ... )         \
+#define RETURN_IF_FAILED( COND, ... )       \
     do                                      \
     {                                       \
         if( !( COND ) )                     \

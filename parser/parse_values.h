@@ -28,7 +28,7 @@ struct datetime
 {
     struct tm*          dt;
     toml_value_type_t   type;
-    char*               format;
+    char                format[ TOML_MAX_DATE_FORMAT ];
     int                 millis;
 };
 

@@ -8,7 +8,7 @@
 toml_value_t* new_string( const char* s )
 {
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
-    v->type         = STRING;
+    v->type         = TOML_STRING;
     v->data         = calloc( 1, strlen( s )+1 );
     memcpy( v->data, s, strlen( s ) );
     return v;
@@ -41,8 +41,11 @@ toml_value_t* new_datetime(
     v->type         = type;
     v->precision    = millis;
     v->data         = calloc( 1, sizeof( struct tm ) );
-    v->format       = calloc( 1, strlen( format ) );
-    memcpy( v->format, format, strlen( format ) );
+    memset( v->format, 0, TOML_MAX_DATE_FORMAT );
+    if( strlen( format )<TOML_MAX_DATE_FORMAT )
+    {
+        memcpy( v->format, format, strlen( format ) );
+    }
     memcpy( v->data, dt, sizeof( struct tm ) );
     return v;
 }
@@ -50,16 +53,16 @@ toml_value_t* new_datetime(
 toml_value_t* new_array()
 {
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
-    v->type         = ARRAY;
-    v->arr          = calloc( 1, sizeof( toml_value_t* )*MAX_ARRAY_LENGTH );
+    v->type         = TOML_ARRAY;
+    v->arr          = calloc( 1, sizeof( toml_value_t* )*TOML_MAX_ARRAY_LENGTH );
     return v;
 }
 
 toml_value_t* new_inline_table( toml_key_t* k )
 {
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
-    v->type         = INLINETABLE;
-    toml_key_t* h   = new_key( KEY );
+    v->type         = TOML_INLINETABLE;
+    toml_key_t* h   = new_key( TOML_KEY );
     for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
     {
         add_subkey( h, *iter );

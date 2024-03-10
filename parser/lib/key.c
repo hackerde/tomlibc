@@ -12,7 +12,7 @@ toml_key_t* new_key( toml_key_type_t type )
     k->last         = NULL;
     k->value        = NULL;
     k->idx          = -1;
-    memset( k->id, 0, MAX_ID_LENGTH );
+    memset( k->id, 0, TOML_MAX_ID_LENGTH );
     return k;
 }
 
@@ -39,7 +39,7 @@ toml_key_t* add_subkey(
     if( key->last==NULL )
     {
         // first time adding a subkey
-        memset( key->subkeys, 0, MAX_NUM_SUBKEYS );
+        memset( key->subkeys, 0, TOML_MAX_SUBKEYS );
         key->last = key->subkeys;
     }
     toml_key_t* s = has_subkey( key, subkey );
@@ -49,9 +49,9 @@ toml_key_t* add_subkey(
         {
             // re-defining a TABLE as a TABLELEAF
             // is allowed only once
-            if( subkey->type==TABLELEAF )
+            if( subkey->type==TOML_TABLELEAF )
             {
-                s->type = TABLELEAF;
+                s->type = TOML_TABLELEAF;
             }
             return s;
         }
@@ -66,9 +66,9 @@ toml_key_t* add_subkey(
             );
         }
     }
-    if( key->last-key->subkeys<MAX_NUM_SUBKEYS )
+    if( key->last-key->subkeys<TOML_MAX_SUBKEYS )
     {
-        if( key->type==ARRAYTABLE )
+        if( key->type==TOML_ARRAYTABLE )
         {
             // since an ARRAYTABLE is a list of a map of key-value,
             // and re-defining an ARRAYTABLE means adding another map
@@ -102,31 +102,31 @@ bool compatible_keys(
 
     // `a = b`
     // `a = c`
-    if( existing==KEYLEAF )
+    if( existing==TOML_KEYLEAF )
     {
         return false;
     }
     // `[a.b]`
     // `[a.b]`
-    if( existing==TABLELEAF && current==TABLELEAF )
+    if( existing==TOML_TABLELEAF && current==TOML_TABLELEAF )
     {
         return false;
     }
     // `[a.b] or b.c = d`
     // `[a.b.e] or [b.e]`
-    if( ( existing==TABLELEAF || existing==KEY ) && current==TABLE )
+    if( ( existing==TOML_TABLELEAF || existing==TOML_KEY ) && current==TOML_TABLE )
     {
         return true;
     }
     // `[a.b]`
     // `[a]`
-    if( existing==TABLE && current==TABLELEAF )
+    if( existing==TOML_TABLE && current==TOML_TABLELEAF )
     {
         return true;
     }
     // `[[t]]`
     // `[t.s]`
-    if( existing==ARRAYTABLE && current==TABLE )
+    if( existing==TOML_ARRAYTABLE && current==TOML_TABLE )
     {
         return true;
     }

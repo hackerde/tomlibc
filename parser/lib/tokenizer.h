@@ -93,6 +93,12 @@ char    get_token              ( tokenizer_t* tok );
 char    get_prev               ( tokenizer_t* tok );
 char    get_prev_prev          ( tokenizer_t* tok );
 
+/*
+    Function `get_input_size` calculates the size of the
+    input stream held by the tokenizer and returns it.
+*/
+long    get_input_size         ( tokenizer_t* tok );
+
 void    delete_tokenizer       ( tokenizer_t* tok );
 
 #endif

@@ -19,7 +19,7 @@ int main( int argc, char* argv[], char** envp )
         printf( "Key data.constants.max does not exist!\n" );
         exit(1);
     }
-    if( !( k->value->type==FLOAT ) )
+    if( !( k->value->type==TOML_FLOAT ) )
     {
         printf( "Key data.constants.max is not a float!\n" );
         exit(1);
@@ -33,16 +33,16 @@ int main( int argc, char* argv[], char** envp )
             printf( "Key data.d3 does not exist!\n" );
             exit(1);
         }
-        if( !( k->value->type==ARRAY ) )
+        if( !( k->value->type==TOML_ARRAY ) )
         {
             printf( "Key data.d3 is not an array!\n" );
             exit(1);
         }
         toml_value_t* v = k->value->arr[1];
-        if( v && v->type==INLINETABLE )
+        if( v && v->type==TOML_INLINETABLE )
         {
             k = toml_get_key( ( toml_key_t* )v->data, "email" );
-            if( k && k->value->type==STRING )
+            if( k && k->value->type==TOML_STRING )
             {
                 printf( "Email: %s\n", ( char* )k->value->data );
             }
