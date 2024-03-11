@@ -19,14 +19,53 @@ $ make
 $ ./main
 ```
 
+### Callbacks
+
+Use the `toml_get_key` function for accessing keys.
+Example:
+
+```c
+toml_key_t* k = toml_get_key(
+                toml_get_key(
+                toml_get_key( toml, "data" ),
+                                    "constants" ),
+                                    "max" );
+```
+
+The following are the functions for accessing values:
+
+```
+toml_get_string
+toml_get_int
+toml_get_float
+toml_get_bool
+toml_get_datetime
+toml_get_array
+```
+
+All callback functions take the `key` as the argument and returns a pointer to the value.
+If there was any error in retrieving the value, all of them return `NULL`.
+For arrays, the length is stored in `value->len` and the data in `value->arr`.
+
+Example of accessing a value in an array:
+
+```c
+toml_value_t* v = toml_get_array(
+                  toml_get_key(
+                  toml_get_key( toml, "data" ),
+                                      "d3" ) );
+// assert v->len>2
+double* pi      = v->arr[ 2 ]->data;
+```
+
 ## Tests
 
 The test suite also includes the [official compliance tests](https://github.com/toml-lang/toml-test).
 
 ```bash
 # specify -r to show regressions
-$ ./tests/run_tests.sh [-r]         # this runs the tomlibc tests
-$ ./tests/run_toml_tests.sh [-r]    # this runs the toml-test suite tests
+$ ./tests/run_tests.sh         # this runs the tomlibc tests
+$ ./tests/run_toml_tests.sh    # this runs the toml-test suite tests
 ```
 
 ### Current Status

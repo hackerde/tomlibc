@@ -40,6 +40,7 @@ struct toml_value
     toml_value_type_t   type;
     /* used for storing `ARRAY` type values */
     toml_value_t**      arr;
+    int                 len;
     /* used for storing non-`ARRAY` type values */
     void*               data;
     /* used for printing numeric values */

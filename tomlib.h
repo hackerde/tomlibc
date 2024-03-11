@@ -43,4 +43,11 @@ toml_key_t* toml_get_key(
     const char* id
 );
 
+char*           toml_get_string     ( toml_key_t* key );
+int*            toml_get_int        ( toml_key_t* key );
+double*         toml_get_float      ( toml_key_t* key );
+bool*           toml_get_bool       ( toml_key_t* key );
+struct tm*      toml_get_datetime   ( toml_key_t* key );
+toml_value_t*   toml_get_array      ( toml_key_t* key );
+
 #endif

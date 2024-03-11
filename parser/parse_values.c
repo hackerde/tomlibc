@@ -612,11 +612,10 @@ toml_value_t* parse_array(
     toml_value_t*   arr
 )
 {
-    int     idx = 0;
-    bool    sep = true;
+    bool sep = true;
     while( has_token( tok ) )
     {
-        RETURN_IF_FAILED( idx<TOML_MAX_ARRAY_LENGTH, "buffer overflow\n" );
+        RETURN_IF_FAILED( arr->len<TOML_MAX_ARRAY_LENGTH, "buffer overflow\n" );
         if( is_arrayend( get_token( tok ) ) )
         {
             next_token( tok );
@@ -646,7 +645,7 @@ toml_value_t* parse_array(
             RETURN_IF_FAILED( sep, "expected , between elements\n" );
             toml_value_t* v = parse_value( tok, "#,] \n" );
             RETURN_IF_FAILED( v, "could not parse value\n" );
-            arr->arr[ idx++ ] = v;
+            arr->arr[ arr->len++ ] = v;
             sep = false;
         }
     }
