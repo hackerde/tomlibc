@@ -55,6 +55,7 @@ toml_value_t* new_array()
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
     v->type         = TOML_ARRAY;
     v->arr          = calloc( 1, sizeof( toml_value_t* )*TOML_MAX_ARRAY_LENGTH );
+    v->len          = 0;
     return v;
 }
 

@@ -11,40 +11,6 @@
 #include <math.h>
 #include <time.h>
 
-static inline void string_dump( const char* s )
-{
-    for( const char* c=s; *c!='\0'; c++ )
-    {
-        switch ( *c )
-        {
-            case '\b':
-                printf( "\\b" );
-                continue;
-            case '\n':
-                printf( "\\n" );
-                continue;
-            case '\r':
-                printf( "\\r" );
-                continue;
-            case '\t':
-                printf( "\\t" );
-                continue;
-            case '\f':
-                printf( "\\f" );
-                continue;
-            case '\\':
-                printf( "\\\\" );
-                continue;
-            case '"':
-                printf( "\\\"" );
-                continue;
-            default:
-                break;
-        }
-        printf( "%c", *c );
-    }
-}
-
 toml_key_t* toml_load( const char* file )
 {
     toml_key_t* root = new_key( TOML_TABLE );
@@ -80,6 +46,122 @@ toml_key_t* toml_load( const char* file )
     delete_tokenizer( tok );
 
     return root;
+}
+
+toml_key_t* toml_get_key(
+    toml_key_t* key,
+    const char* id
+)
+{
+    if( key==NULL )
+    {
+        return NULL;
+    }
+    if( strcmp( key->id, id )==0 )
+    {
+        return key;
+    }
+    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
+    {
+        if( strcmp( ( *iter )->id, id )==0 )
+        {
+            return *iter;
+        }
+    }
+    LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
+    return NULL;
+}
+
+char* toml_get_string( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_STRING ) ) return NULL;
+    if( !( key->value->data ) )              return NULL;
+    return ( char* )( key->value->data );
+}
+
+int* toml_get_int( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_INT ) )    return NULL;
+    if( !( key->value->data ) )              return NULL;
+    return ( int* )( key->value->data );
+}
+
+double* toml_get_float( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_FLOAT ) )  return NULL;
+    if( !( key->value->data ) )              return NULL;
+    return ( double* )( key->value->data );
+}
+
+bool* toml_get_bool( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_BOOL ) )   return NULL;
+    if( !( key->value->data ) )              return NULL;
+    return ( bool* )( key->value->data );
+}
+
+struct tm* toml_get_datetime( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_DATETIME      ||
+           key->value->type==TOML_DATETIMELOCAL ||
+           key->value->type==TOML_DATELOCAL     ||
+           key->value->type==TOML_TIMELOCAL
+         )
+    ) return NULL;
+    if( !( key->value->data ) )              return NULL;
+    return ( struct tm* )( key->value->data );
+}
+
+toml_value_t* toml_get_array( toml_key_t* key )
+{
+    if( !key )                               return NULL;
+    if( !( key->value ) )                    return NULL;
+    if( !( key->value->type==TOML_ARRAY ) )  return NULL;
+    return key->value;
+}
+
+static inline void string_dump( const char* s )
+{
+    for( const char* c=s; *c!='\0'; c++ )
+    {
+        switch ( *c )
+        {
+            case '\b':
+                printf( "\\b" );
+                continue;
+            case '\n':
+                printf( "\\n" );
+                continue;
+            case '\r':
+                printf( "\\r" );
+                continue;
+            case '\t':
+                printf( "\\t" );
+                continue;
+            case '\f':
+                printf( "\\f" );
+                continue;
+            case '\\':
+                printf( "\\\\" );
+                continue;
+            case '"':
+                printf( "\\\"" );
+                continue;
+            default:
+                break;
+        }
+        printf( "%c", *c );
+    }
 }
 
 void toml_key_dump( toml_key_t* k )
@@ -262,30 +344,6 @@ void toml_json_dump( toml_key_t* root )
         }
     }
     printf( "\n}\n" );
-}
-
-toml_key_t* toml_get_key(
-    toml_key_t* key,
-    const char* id
-)
-{
-    if( key==NULL )
-    {
-        return NULL;
-    }
-    if( strcmp( key->id, id )==0 )
-    {
-        return key;
-    }
-    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
-    {
-        if( strcmp( ( *iter )->id, id )==0 )
-        {
-            return *iter;
-        }
-    }
-    LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
-    return NULL;
 }
 
 void toml_free( toml_key_t* toml )

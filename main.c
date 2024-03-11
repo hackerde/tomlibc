@@ -11,40 +11,33 @@ int main( int argc, char* argv[], char** envp )
     if( !toml )
     {
         printf( "Could not load toml file: %s\n", filename );
+        exit( 1 );
     }
-    toml_key_t* k;
-    k = toml_get_key( toml_get_key( toml_get_key( toml, "data" ), "constants" ), "max" );
-    if( !k )
+    double* max = toml_get_float(
+                  toml_get_key(
+                  toml_get_key(
+                  toml_get_key( toml, "data" ),
+                                      "constants" ),
+                                      "max" ) );
+    if( !max )
     {
-        printf( "Key data.constants.max does not exist!\n" );
-        exit(1);
+        printf( "data.constants.max is not a float\n" );
+        exit( 1 );
     }
-    if( !( k->value->type==TOML_FLOAT ) )
-    {
-        printf( "Key data.constants.max is not a float!\n" );
-        exit(1);
-    }
-    double* max = k->value->data;
     if( 100000000 < *max )
     {
-        k = toml_get_key( toml_get_key( toml, "data" ), "d3" );
-        if( !k )
+        toml_value_t* v = toml_get_array(
+                          toml_get_key(
+                          toml_get_key( toml, "data" ),
+                                              "d3" ) );
+        if( v && v->len>1 )
         {
-            printf( "Key data.d3 does not exist!\n" );
-            exit(1);
-        }
-        if( !( k->value->type==TOML_ARRAY ) )
-        {
-            printf( "Key data.d3 is not an array!\n" );
-            exit(1);
-        }
-        toml_value_t* v = k->value->arr[1];
-        if( v && v->type==TOML_INLINETABLE )
-        {
-            k = toml_get_key( ( toml_key_t* )v->data, "email" );
-            if( k && k->value->type==TOML_STRING )
+            if( v->arr[ 1 ]->type==TOML_INLINETABLE &&
+                v->arr[ 1 ]->data )
             {
-                printf( "Email: %s\n", ( char* )k->value->data );
+                char* email = toml_get_string(
+                              toml_get_key( v->arr[ 1 ]->data, "email" ) );
+                if( email ) printf( "Email: %s\n", email );
             }
         }
     }

@@ -1,6 +1,6 @@
 # comment
 number = 1234
-datetime = 1979-05-27T08:32:01
+datetime = 2024-02-29T08:09:10
 
 [section]
 array = [
@@ -16,11 +16,12 @@ jumped over the lazy dog
 key.subkey = "value"
 
 [data]
-d1 = -509
+d1 = -404
 d2 = { type = "int" }
 d3 = [
   "foo@example.com",
-  { email = "bar@example.com", url = 'https://example.com/bar' }
+  { email = "bar@example.com", url = 'https://example.com/bar' },
+  3.14
 ]
 
 [data.constants]
