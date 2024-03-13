@@ -91,4 +91,4 @@ Running toml-test tests
 [TEST REPORT]: Passed 511 tests | Failed 27 tests | Percent: 94.98%
 ```
 
-The failing tests involve leading zeros, `+` or `-` signs, invalid unicode characters, etc.
+The failing tests involve leading zeros, `+` or `-` signs, invalid or null unicode characters, etc.

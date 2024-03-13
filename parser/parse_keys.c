@@ -421,10 +421,13 @@ toml_key_t* parse_keyval(
         {
             toml_key_t* h   = ( toml_key_t * )( v->data );
             subkey->type    = TOML_KEY;
-            for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
+            for( khiter_t ki=kh_begin( h->subkeys ); ki!=kh_end( h->subkeys ); ++ki )
             {
-                toml_key_t* e = add_subkey( subkey, *iter );
-                RETURN_IF_FAILED( e, "could not add inline table key %s\n", ( *iter )->id );
+                if( kh_exist( h->subkeys, ki ) )
+                {
+                    toml_key_t* e = add_subkey( subkey, kh_value( h->subkeys, ki ) );
+                    RETURN_IF_FAILED( e, "could not add inline table key %s\n", kh_value( h->subkeys, ki )->id );
+                }
             }
             subkey->type    = TOML_KEYLEAF;
         }

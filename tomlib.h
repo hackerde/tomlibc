@@ -11,7 +11,7 @@
     returns a pointer to the `root` key and NULL on
     failure.
 */
-toml_key_t* toml_load   ( const char* file );
+toml_key_t* toml_load   ( char* file );
 
 /*
     Function `toml_key_dump`, `toml_value_dump` and

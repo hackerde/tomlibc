@@ -2,6 +2,8 @@
 #include "utils.h"
 #include "value.h"
 
+#include "khash.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,9 +11,9 @@ toml_key_t* new_key( toml_key_type_t type )
 {
     toml_key_t* k   = calloc( 1, sizeof( toml_key_t ) );
     k->type         = type;
-    k->last         = NULL;
     k->value        = NULL;
     k->idx          = -1;
+    k->subkeys      = kh_init( str );
     memset( k->id, 0, TOML_MAX_ID_LENGTH );
     return k;
 }
@@ -21,14 +23,9 @@ toml_key_t* has_subkey(
     toml_key_t* subkey
 )
 {
-    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
-    {
-        if ( strcmp( ( *iter )->id, subkey->id )==0 )
-        {
-            return *iter;
-        }
-    }
-    return NULL;
+    khiter_t k = kh_get( str, key->subkeys, subkey->id );
+    if( k==kh_end( key->subkeys ) ) return NULL;
+    return kh_value( key->subkeys, k );
 }
 
 toml_key_t* add_subkey(
@@ -36,12 +33,6 @@ toml_key_t* add_subkey(
     toml_key_t* subkey
 )
 {
-    if( key->last==NULL )
-    {
-        // first time adding a subkey
-        memset( key->subkeys, 0, TOML_MAX_SUBKEYS );
-        key->last = key->subkeys;
-    }
     toml_key_t* s = has_subkey( key, subkey );
     if( s )
     {
@@ -66,7 +57,7 @@ toml_key_t* add_subkey(
             );
         }
     }
-    if( key->last-key->subkeys<TOML_MAX_SUBKEYS )
+    if( kh_size( key->subkeys )<TOML_MAX_SUBKEYS )
     {
         if( key->type==TOML_ARRAYTABLE )
         {
@@ -79,8 +70,9 @@ toml_key_t* add_subkey(
         }
         else
         {
-            *( key->last ) = subkey;
-            key->last++;
+            int ret;
+            khiter_t k = kh_put( str, key->subkeys, subkey->id, &ret );
+            kh_value( key->subkeys, k ) = subkey;
             return subkey;
         }
     }
@@ -140,13 +132,7 @@ bool compatible_keys(
 void delete_key( toml_key_t* key )
 {
     if( !key ) return;
-    if( key->last )
-    {
-        for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
-        {
-            delete_key( *iter );
-        }
-    }
+    kh_destroy( str, key->subkeys );
     if( key->value )
     {
         delete_value( key->value );
