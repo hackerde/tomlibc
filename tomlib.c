@@ -11,27 +11,14 @@
 #include <math.h>
 #include <time.h>
 
-toml_key_t* toml_load( const char* file )
+toml_key_t* toml_load( char* file )
 {
     toml_key_t* root = new_key( TOML_TABLE );
     memcpy( root->id, "root", strlen( "root" ) );
 
-    FILE* stream;
-    if( file )
-    {
-        stream = fopen( file, "r" );
-        RETURN_IF_FAILED( stream, "Could not open file: %s\n", file );
-    }
-    else
-    {
-        stream = stdin;
-        file = "stdin";
-    }
-    // Max file size - 1GB
-    #define MAX_FILE_SIZE 1073741824
-    tokenizer_t* tok = new_tokenizer( stream );
-    RETURN_IF_FAILED( get_input_size( tok )<MAX_FILE_SIZE,
-                      "Input from %s is too big\n", file );
+    tokenizer_t* tok = new_tokenizer( file );
+    bool         ok  = load_input( tok );
+    RETURN_IF_FAILED( ok, "Failed to load input from %s\n", file );
     next_token( tok );
 
     toml_key_t* key = root;
@@ -61,12 +48,10 @@ toml_key_t* toml_get_key(
     {
         return key;
     }
-    for( toml_key_t** iter=key->subkeys; iter<key->last; iter++ )
+    khiter_t k = kh_get( str, key->subkeys, id );
+    if( k!=kh_end( key->subkeys ) )
     {
-        if( strcmp( ( *iter )->id, id )==0 )
-        {
-            return *iter;
-        }
+        return kh_value( key->subkeys, k );
     }
     LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
     return NULL;
@@ -193,12 +178,16 @@ void toml_key_dump( toml_key_t* k )
         printf( "\"" );
         string_dump( k->id );
         printf( "\": {\n" );
-        for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
+        int total = kh_size( k->subkeys );
+        for( khiter_t ki=kh_begin( k->subkeys ); ki!=kh_end( k->subkeys ); ++ki )
         {
-            toml_key_dump( *iter );
-            if( ( iter+1 )!=k->last )
+            if( kh_exist( k->subkeys, ki ) )
             {
-                printf( ",\n" );
+                toml_key_dump( kh_value( k->subkeys, ki ) );
+                if( --total>0 )
+                {
+                    printf( ",\n" );
+                }
             }
         }
         printf( "\n}" );
@@ -315,12 +304,16 @@ void toml_value_dump( toml_value_t* v )
         {
             printf( "{\n" );
             toml_key_t* k = ( toml_key_t* )( v->data );
-            for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
+            int total = kh_size( k->subkeys );
+            for( khiter_t ki=kh_begin( k->subkeys ); ki!=kh_end( k->subkeys ); ++ki )
             {
-                toml_key_dump( ( *iter ) );
-                if( ( iter+1 )!=k->last )
+                if( kh_exist( k->subkeys, ki ) )
                 {
-                    printf( ",\n" );
+                    toml_key_dump( kh_value( k->subkeys, ki ) );
+                    if( --total>0 )
+                    {
+                        printf( ",\n" );
+                    }
                 }
             }
             printf( "\n}" );
@@ -335,12 +328,16 @@ void toml_value_dump( toml_value_t* v )
 void toml_json_dump( toml_key_t* root )
 {
     printf( "{\n" );
-    for( toml_key_t** iter=root->subkeys; iter<root->last; iter++ )
+    int total = kh_size( root->subkeys );
+    for( khiter_t ki=kh_begin( root->subkeys ); ki!=kh_end( root->subkeys ); ki++ )
     {
-        toml_key_dump( *iter );
-        if( (iter+1)!=root->last )
+        if( kh_exist( root->subkeys, ki ) )
         {
-            printf( ",\n" );
+            toml_key_dump( kh_value( root->subkeys, ki ) );
+            if( --total>0 )
+            {
+                printf( ",\n" );
+            }
         }
     }
     printf( "\n}\n" );

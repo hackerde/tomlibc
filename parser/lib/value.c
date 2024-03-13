@@ -64,9 +64,12 @@ toml_value_t* new_inline_table( toml_key_t* k )
     toml_value_t* v = calloc( 1, sizeof( toml_value_t ) );
     v->type         = TOML_INLINETABLE;
     toml_key_t* h   = new_key( TOML_KEY );
-    for( toml_key_t** iter=k->subkeys; iter<k->last; iter++ )
+    for( khiter_t ki=kh_begin( k->subkeys ); ki!=kh_end( k->subkeys ); ++ki )
     {
-        add_subkey( h, *iter );
+        if( kh_exist( k->subkeys, ki ) )
+        {
+            add_subkey( h, kh_value( k->subkeys, ki ) );
+        }
     }
     v->data         = h;
     return v;

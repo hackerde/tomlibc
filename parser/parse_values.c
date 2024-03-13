@@ -736,10 +736,13 @@ toml_key_t* parse_inlinetable( tokenizer_t* tok )
             {
                 toml_key_t* h   = ( toml_key_t * )( v->data );
                 k->type         = TOML_KEY;
-                for( toml_key_t** iter=h->subkeys; iter<h->last; iter++ )
+                for( khiter_t ki=kh_begin( h->subkeys ); ki!=kh_end( h->subkeys ); ++ki )
                 {
-                    toml_key_t* e = add_subkey( k, *iter );
-                    RETURN_IF_FAILED( e, "could not add inline table key %s\n", ( *iter )->id );
+                    if( kh_exist( h->subkeys, ki ) )
+                    {
+                        toml_key_t* e = add_subkey( k, kh_value( h->subkeys, ki ) );
+                        RETURN_IF_FAILED( e, "could not add inline table key %s\n", kh_value( h->subkeys, ki )->id );
+                    }
                 }
                 k->type         = TOML_KEYLEAF;
             }

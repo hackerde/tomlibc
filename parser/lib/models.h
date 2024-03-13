@@ -1,13 +1,16 @@
 #ifndef __TOMLIBC_MODELS_H__
 #define __TOMLIBC_MODELS_H__
 
+#include "khash.h"
+
 #include <stdbool.h>
 
 #define TOML_MAX_DATE_FORMAT    64
 #define TOML_MAX_ID_LENGTH      256
-#define TOML_MAX_SUBKEYS        1024
-#define TOML_MAX_ARRAY_LENGTH   1024
 #define TOML_MAX_STRING_LENGTH  4096
+
+#define TOML_MAX_SUBKEYS        131072  // 2^17
+#define TOML_MAX_ARRAY_LENGTH   131072  // 2^17
 
 /*
     Enum `toml_value_type` represents the set of value
@@ -76,16 +79,15 @@ enum toml_key_type
     if they were defined as TOML keys or tables.
 */
 typedef struct toml_key toml_key_t;
+KHASH_MAP_INIT_STR( str, toml_key_t* )
 struct toml_key
 {
     /* key type as described above */
     toml_key_type_t type;
     /* identifier */
     char            id[ TOML_MAX_ID_LENGTH ];
-    /* list of subkeys */
-    toml_key_t*     subkeys[ TOML_MAX_SUBKEYS ];
-    /* pointer to the last added subkey */
-    toml_key_t**    last;
+    /* map of subkeys */
+    khash_t( str )* subkeys;
     /* value associated with this key */
     toml_value_t*   value;
     /* used for indexing ARRAYTABLES */

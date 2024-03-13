@@ -4,10 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-tokenizer_t* new_tokenizer( FILE* input )
+tokenizer_t* new_tokenizer( char* input )
 {
     tokenizer_t* tok    = calloc( 1, sizeof( tokenizer_t ) );
-    tok->stream         = input;
+    tok->input          = input;
     tok->cursor         = 0;
     tok->token          = '\0';
     tok->prev           = '\0';
@@ -21,27 +21,20 @@ tokenizer_t* new_tokenizer( FILE* input )
 
 int next_token( tokenizer_t* tok )
 {
-    fseek( tok->stream, tok->cursor, SEEK_SET );
-    if( tok->prev!='\0' )
-    {
-        tok->prev_prev  = tok->prev;
-    }
-    if( tok->token!='\0' )
-    {
-        tok->prev       = tok->token;
-    }
+    tok->prev_prev  = tok->prev;
+    tok->prev       = tok->token;
     if( tok->has_token || tok->cursor==0 )
     {
-        char c          = fgetc( tok->stream );
+        tok->token      = tok->stream[ tok->cursor++ ];
         // if we parsed some non-whitespace character since we saw
         // the newline, then we aren't on a newline anymore
-        if( tok->prev && tok->prev!=' ' &&
+        if( tok->newline && tok->prev && tok->prev!=' ' &&
             tok->prev!='\t' && tok->prev!='\n'
         )
         {
             tok->newline = false;
         }
-        if( c=='\n' )
+        if( tok->token=='\n' )
         {
             tok->newline = true;
         }
@@ -58,17 +51,11 @@ int next_token( tokenizer_t* tok )
         {
             tok->col++;
         }
-        if( c==EOF )
+        if( tok->token==EOF )
         {
             tok->token      = '\0';
             tok->has_token  = false;
         }
-        else
-        {
-            tok->token      = c;
-            tok->has_token  = true;
-        }
-        tok->cursor++;
         return 1;
     }
     return 0;
@@ -102,12 +89,41 @@ void backtrack(
     }
 }
 
-long get_input_size( tokenizer_t* tok )
+bool load_input( tokenizer_t* tok )
 {
-    fseek( tok->stream, 0L, SEEK_END );
-    long sz = ftell( tok->stream );
-    fseek( tok->stream, tok->cursor, SEEK_SET );
-    return sz;
+    #define MAX_FILE_SIZE 1073741824
+    FILE* stream;
+    if( tok->input )
+    {
+        stream      = fopen( tok->input, "r" );
+    }
+    else
+    {
+        stream      = stdin;
+    }
+    if( !stream )
+    {
+        LOG_ERR( "could not open input stream\n" );
+        return false;
+    }
+    fseek( stream, 0L, SEEK_END );
+    long size       = ftell( stream );
+    fseek( stream, 0L, SEEK_SET );
+    if( size>=MAX_FILE_SIZE )
+    {
+        LOG_ERR( "input size is too big\n" );
+        return false;
+    }
+    char* buffer    = calloc( 1, size+1 );
+    if( size>0 && 1!=fread( buffer, size, 1, stream ) )
+    {
+        LOG_ERR( "could not read input\n" );
+        return false;
+    }
+    buffer[ size ]  = EOF;
+    tok->stream     = buffer;
+    #undef MAX_FILE_SIZE
+    return true;
 }
 
 bool has_token( tokenizer_t* tok )
@@ -132,5 +148,6 @@ char get_prev_prev( tokenizer_t* tok )
 
 void delete_tokenizer( tokenizer_t* tok )
 {
+    free( tok->stream );
     free( tok );
 }

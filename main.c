@@ -6,7 +6,7 @@
 int main( int argc, char* argv[], char** envp )
 {
     /* Load TOML data from a file */
-    const char* filename = "sample.toml";
+    char* filename = "sample.toml";
     toml_key_t* toml = toml_load( filename );
     if( !toml )
     {

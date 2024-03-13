@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 
-#define MAX_NUM_LINES 65536
+#define MAX_NUM_LINES 16777216   // 2^24
 
 /*
     Struct `tokenizer` handles the input stream
@@ -19,8 +19,10 @@
 */
 typedef struct tokenizer tokenizer_t;
 struct tokenizer {
-    /* the input stream */
-    FILE*   stream;
+    /* the input filename */
+    char*   input;
+    /* pointer for storing the input buffer */
+    char*   stream;
     /* the location in the input buffer */
     int     cursor;
     /* the last read in token */
@@ -47,7 +49,15 @@ struct tokenizer {
     the various attributes and returns a pointer to the
     newly allocated memory region.
 */
-tokenizer_t* new_tokenizer     ( FILE* filename );
+tokenizer_t* new_tokenizer     ( char* filename );
+
+/*
+    Function `load_input` loads the data from an the input
+    stream onto a char buffer. It also checks to make sure
+    that the input is not too large. Upon any error, it
+    returns false and returns true if everything succeeds.
+*/
+bool   load_input              ( tokenizer_t* tok );
 
 /*
     Function `next_token` reads the next character from the
@@ -92,12 +102,6 @@ bool    has_token              ( tokenizer_t* tok );
 char    get_token              ( tokenizer_t* tok );
 char    get_prev               ( tokenizer_t* tok );
 char    get_prev_prev          ( tokenizer_t* tok );
-
-/*
-    Function `get_input_size` calculates the size of the
-    input stream held by the tokenizer and returns it.
-*/
-long    get_input_size         ( tokenizer_t* tok );
 
 void    delete_tokenizer       ( tokenizer_t* tok );
 
