@@ -74,7 +74,7 @@ $ ./tests/run_toml_tests.sh    # this runs the toml-test suite tests
 ### Current Status
 
 > [!NOTE]
-> This has only been tested on macOS Sonoma Version 14.2.1 with clang 12.0.5
+> This has only been tested on macOS Sonoma Version 14.2.1 with clang 15.0.0
 
 **tomlibc**
 
@@ -94,12 +94,12 @@ Running toml-test tests
 [TEST REPORT]: Passed 511 tests | Failed 27 tests | Percent: 94.98%
 ```
 
-The failing tests involve leading zeros, `+` or `-` signs, invalid or null unicode characters, etc.
+The failing tests involve leading zeros, `+` or `-` signs with zeros, invalid or null unicode characters, etc.
 
 ## Benchmarks
 
 The library was benchmarked against some existing TOML parsers.
-The code is pretty simple - they all opens the file, parses it, frees memory and exits.
+The code is pretty simple - they all open the file, parse it, free the memory and exit.
 The benchmarks were done using the following files (which were generated using python):
 
 ```bash
@@ -116,15 +116,15 @@ $ wc -l gigantic.toml
 ```bash
 $ time ./tomlibc ../big.toml
 
-real	0m0.383s
-user	0m0.286s
-sys	    0m0.029s
+real    0m0.383s
+user    0m0.286s
+sys     0m0.029s
 
 $ time ./tomlibc ../gigantic.toml
 
 real	0m15.947s
 user	0m14.694s
-sys	    0m0.965s
+sys     0m0.965s
 ```
 
 ### tomlc99 (c)
@@ -134,7 +134,7 @@ $ time ./tomlc99 ../big.toml
 
 real	0m26.868s
 user	0m26.727s
-sys	    0m0.037s
+sys     0m0.037s
 
 $ time ./tomlc99 ../gigantic.toml
 
@@ -148,13 +148,13 @@ $ time ./tomlpp ../big.toml
 
 real	0m1.290s
 user	0m1.254s
-sys	    0m0.022s
+sys     0m0.022s
 
 $ time ./tomlpp ../gigantic.toml
 
 real	1m3.974s
 user	1m3.105s
-sys	    0m0.599s
+sys     0m0.599s
 ```
 
 ### toml (rust)
@@ -164,13 +164,13 @@ $ time target/debug/main ../big.toml
 
 real	0m3.130s
 user	0m3.047s
-sys	    0m0.062s
+sys     0m0.062s
 
 $ time target/debug/main ../gigantic.toml
 
 real	2m13.804s
 user	2m10.359s
-sys	    0m2.566s
+sys     0m2.566s
 ```
 
 ### toml (python)
@@ -180,11 +180,11 @@ $ time python3 parser.py ../big.toml
 
 real	0m2.325s
 user	0m2.214s
-sys	    0m0.053s
+sys     0m0.053s
 
 $ time python3 parser.py ../gigantic.toml
 
 real	1m55.768s
 user	1m53.099s
-sys	    0m1.913s
+sys     0m1.913s
 ```
