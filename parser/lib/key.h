@@ -10,7 +10,8 @@
     to NULL and idx to 0. Returns a pointer to the
     newly allocated key.
 */
-toml_key_t* new_key     ( toml_key_type_t type );
+toml_key_t*
+new_key( toml_key_type_t type );
 
 /*
     Function `delete_key` frees up all the memory allocated
@@ -19,7 +20,8 @@ toml_key_t* new_key     ( toml_key_type_t type );
     it frees up all the memory allocated by `value` if any.
     Finally, it frees up the memory allocated by itself.
 */
-void        delete_key  ( toml_key_t* key );
+void
+delete_key( toml_key_t* key );
 
 /*
     Function `has_subkey` checks if a `key` has a `subkey`
@@ -27,7 +29,8 @@ void        delete_key  ( toml_key_t* key );
     and matching against the `id`. Returns a pointer
     to the key if it exists, else returns NULL.
 */
-toml_key_t*  has_subkey(
+toml_key_t* 
+has_subkey(
     toml_key_t* key,
     toml_key_t* subkey
 );
@@ -43,7 +46,8 @@ toml_key_t*  has_subkey(
     added subkey is returned respectively. Otherwise, it
     returns a NULL pointer on failure or buffer overflow.
 */
-toml_key_t*  add_subkey(
+toml_key_t*
+add_subkey(
     toml_key_t* key,
     toml_key_t* subkey
 );
@@ -55,7 +59,8 @@ toml_key_t*  add_subkey(
     key being re-defined and returns `true` if it is valid
     and `false` otherwise.
 */
-bool compatible_keys(
+bool
+compatible_keys(
     toml_key_type_t existing,
     toml_key_type_t current
 );

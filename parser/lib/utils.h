@@ -10,8 +10,7 @@
     was raised in.
 */
 #define LOG_ERR( ... )                      \
-    do                                      \
-    {                                       \
+    do {                                    \
         fprintf( stderr, "%s:%d [%s]: ",    \
         __FILE__, __LINE__, __func__ );     \
         fprintf( stderr, __VA_ARGS__ );     \
@@ -23,10 +22,8 @@
     where it is called.
 */
 #define RETURN_IF_FAILED( COND, ... )       \
-    do                                      \
-    {                                       \
-        if( !( COND ) )                     \
-        {                                   \
+    do {                                    \
+        if( !( COND ) ) {                   \
             LOG_ERR( __VA_ARGS__ );         \
             return NULL;                    \
         }                                   \

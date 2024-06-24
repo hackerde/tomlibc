@@ -11,8 +11,8 @@
 #include <math.h>
 #include <time.h>
 
-toml_key_t* toml_load( char* file )
-{
+toml_key_t*
+toml_load( char* file ) {
     toml_key_t* root = new_key( TOML_TABLE );
     memcpy( root->id, "root", strlen( "root" ) );
 
@@ -22,8 +22,7 @@ toml_key_t* toml_load( char* file )
     next_token( tok );
 
     toml_key_t* key = root;
-    while( has_token( tok )!=0 )
-    {
+    while( has_token( tok )!=0 ) {
         key = parse_keyval( tok, key, root );
         RETURN_IF_FAILED( key, "Encountered an error while parsing %s\n"
                           "At line %d column %d\n",
@@ -31,96 +30,89 @@ toml_key_t* toml_load( char* file )
     }
 
     delete_tokenizer( tok );
-
     return root;
 }
 
-toml_key_t* toml_get_key(
+toml_key_t*
+toml_get_key(
     toml_key_t* key,
     const char* id
-)
-{
-    if( key==NULL )
-    {
+) {
+    if( key==NULL ) {
         return NULL;
     }
-    if( strcmp( key->id, id )==0 )
-    {
+    if( strcmp( key->id, id )==0 ) {
         return key;
     }
     khiter_t k = kh_get( str, key->subkeys, id );
-    if( k!=kh_end( key->subkeys ) )
-    {
+    if( k!=kh_end( key->subkeys ) ) {
         return kh_value( key->subkeys, k );
     }
-    LOG_ERR( "node %s does not exist in subkeys of node %s", id, key->id );
+    LOG_ERR( "node %s does not exist in subkeys of node %s",
+             id, key->id );
     return NULL;
 }
 
-char* toml_get_string( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
-    if( !( key->value->type==TOML_STRING ) ) return NULL;
-    if( !( key->value->data ) )              return NULL;
+char*
+toml_get_string( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
+    if( !( key->value->type==TOML_STRING ) )    return NULL;
+    if( !( key->value->data ) )                 return NULL;
     return ( char* )( key->value->data );
 }
 
-int* toml_get_int( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
-    if( !( key->value->type==TOML_INT ) )    return NULL;
-    if( !( key->value->data ) )              return NULL;
+int*
+toml_get_int( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
+    if( !( key->value->type==TOML_INT ) )       return NULL;
+    if( !( key->value->data ) )                 return NULL;
     return ( int* )( key->value->data );
 }
 
-double* toml_get_float( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
-    if( !( key->value->type==TOML_FLOAT ) )  return NULL;
-    if( !( key->value->data ) )              return NULL;
+double*
+toml_get_float( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
+    if( !( key->value->type==TOML_FLOAT ) )     return NULL;
+    if( !( key->value->data ) )                 return NULL;
     return ( double* )( key->value->data );
 }
 
-bool* toml_get_bool( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
-    if( !( key->value->type==TOML_BOOL ) )   return NULL;
-    if( !( key->value->data ) )              return NULL;
+bool*
+toml_get_bool( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
+    if( !( key->value->type==TOML_BOOL ) )      return NULL;
+    if( !( key->value->data ) )                 return NULL;
     return ( bool* )( key->value->data );
 }
 
-struct tm* toml_get_datetime( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
+struct tm*
+toml_get_datetime( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
     if( !( key->value->type==TOML_DATETIME      ||
            key->value->type==TOML_DATETIMELOCAL ||
            key->value->type==TOML_DATELOCAL     ||
-           key->value->type==TOML_TIMELOCAL
-         )
-    ) return NULL;
-    if( !( key->value->data ) )              return NULL;
+           key->value->type==TOML_TIMELOCAL ) ) return NULL;
+    if( !( key->value->data ) )                 return NULL;
     return ( struct tm* )( key->value->data );
 }
 
-toml_value_t* toml_get_array( toml_key_t* key )
-{
-    if( !key )                               return NULL;
-    if( !( key->value ) )                    return NULL;
-    if( !( key->value->type==TOML_ARRAY ) )  return NULL;
+toml_value_t*
+toml_get_array( toml_key_t* key ) {
+    if( !key )                                  return NULL;
+    if( !( key->value ) )                       return NULL;
+    if( !( key->value->type==TOML_ARRAY ) )     return NULL;
     return key->value;
 }
 
-static inline void string_dump( const char* s )
-{
-    for( const char* c=s; *c!='\0'; c++ )
-    {
-        switch ( *c )
-        {
+static inline void
+string_dump( const char* s ) {
+    for( const char* c=s; *c!='\0'; c++ ) {
+        switch ( *c ) {
             case '\b':
                 printf( "\\b" );
                 continue;
@@ -149,17 +141,17 @@ static inline void string_dump( const char* s )
     }
 }
 
-void toml_key_dump( toml_key_t* k )
-{
-    if( k->type==TOML_KEYLEAF && k->value!=NULL && k->value->type!=TOML_INLINETABLE )
-    {
+void
+toml_key_dump( toml_key_t* k ) {
+    if( k->type==TOML_KEYLEAF &&
+        k->value!=NULL &&
+        k->value->type!=TOML_INLINETABLE ) {
         printf( "\"" );
         string_dump( k->id );
         printf( "\": " );
         toml_value_dump( k->value );
     }
-    else if( k->type==TOML_ARRAYTABLE )
-    {
+    else if( k->type==TOML_ARRAYTABLE ) {
         printf( "\"" );
         string_dump( k->id );
         printf( "\": [\n" );
@@ -173,19 +165,17 @@ void toml_key_dump( toml_key_t* k )
         }
         printf("\n]");
     }
-    else
-    {
+    else {
         printf( "\"" );
         string_dump( k->id );
         printf( "\": {\n" );
         int total = kh_size( k->subkeys );
-        for( khiter_t ki=kh_begin( k->subkeys ); ki!=kh_end( k->subkeys ); ++ki )
-        {
-            if( kh_exist( k->subkeys, ki ) )
-            {
+        for( khiter_t ki=kh_begin( k->subkeys );
+             ki!=kh_end( k->subkeys );
+             ++ki ) {
+            if( kh_exist( k->subkeys, ki ) ) {
                 toml_key_dump( kh_value( k->subkeys, ki ) );
-                if( --total>0 )
-                {
+                if( --total>0 ) {
                     printf( ",\n" );
                 }
             }
@@ -194,124 +184,106 @@ void toml_key_dump( toml_key_t* k )
     }
 }
 
-void toml_value_dump( toml_value_t* v )
-{
-    switch ( v->type )
-    {
-        case TOML_STRING:
-        {
+void
+toml_value_dump( toml_value_t* v ) {
+    switch ( v->type ) {
+        case TOML_STRING: {
             printf( "{\"type\": \"string\", \"value\": \"" );
             string_dump( ( char* )v->data );
             printf( "\"}" );
             break;
         }
-        case TOML_FLOAT:
-        {
+        case TOML_FLOAT: {
             printf( "{\"type\": \"float\", \"value\": " );
             double f = *( double* )( v->data );
-            if( f==( double ) INFINITY )
-            {
+            if( f==( double ) INFINITY ) {
                 printf( "\"inf\"}" );
             }
-            else if( f==( double ) -INFINITY )
-            {
+            else if( f==( double ) -INFINITY ) {
                 printf( "\"-inf\"}" );
             }
-            else if( isnan(f) )
-            {
+            else if( isnan(f) ) {
                 printf( "\"nan\"}" );
             }
-            else if( v->scientific )
-            {
+            else if( v->scientific ) {
                 printf( "\"%g\"}", f );
             }
-            else if( f==0.0 )
-            {
+            else if( f==0.0 ) {
                 printf( "\"0.0\"}" );
             }
-            else
-            {
+            else {
                 printf( "\"%.*lf\"}", ( int )v->precision, f );
             }
             break;
         }
-        case TOML_INT:
-        {
+        case TOML_INT: {
             printf( "{\"type\": \"integer\", \"value\": " );
             printf( "\"%.0lf\"}", *( double* )( v->data ) );
             break;
         }
-        case TOML_BOOL:
-        {
+        case TOML_BOOL: {
             printf( "{\"type\": \"bool\", \"value\": " );
-            if( *( double* )( v->data ) )
-            {
+            if( *( double* )( v->data ) ) {
                 printf( "\"true\"}" );
             }
-            else
-            {
+            else {
                 printf( "\"false\"}" );
             }
             break;
         }
-        case TOML_DATETIME:
-        {
+        case TOML_DATETIME: {
             printf( "{\"type\": \"datetime\", \"value\": " );
             char buf[ 255 ] = { 0 };
-            strftime( buf, sizeof( buf ), v->format, ( struct tm* )v->data );
+            strftime( buf, sizeof( buf ), v->format,
+                      ( struct tm* )v->data );
             printf( "\"%s\"}", buf);
             break;
         }
-        case TOML_DATETIMELOCAL:
-        {
+        case TOML_DATETIMELOCAL: {
             printf( "{\"type\": \"datetime-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
-            strftime( buf, sizeof( buf ), v->format, ( struct tm* )v->data );
+            strftime( buf, sizeof( buf ), v->format,
+                      ( struct tm* )v->data );
             printf( "\"%s\"}", buf );
             break;
         }
-        case TOML_DATELOCAL:
-        {
+        case TOML_DATELOCAL: {
             printf( "{\"type\": \"date-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
-            strftime( buf, sizeof( buf ), v->format, ( struct tm* )v->data );
+            strftime( buf, sizeof( buf ), v->format,
+                      ( struct tm* )v->data );
             printf( "\"%s\"}", buf );
             break;
         }
-        case TOML_TIMELOCAL:
-        {
+        case TOML_TIMELOCAL: {
             printf( "{\"type\": \"time-local\", \"value\": " );
             char buf[ 255 ] = { 0 };
-            strftime( buf, sizeof( buf ), v->format, ( struct tm* )v->data );
+            strftime( buf, sizeof( buf ), v->format,
+                      ( struct tm* )v->data );
             printf( "\"%s\"}", buf );
             break;
         }
-        case TOML_ARRAY:
-        {
+        case TOML_ARRAY: {
             printf( "[\n" );
-            for( toml_value_t** iter=v->arr; *iter!=NULL; iter++ )
-            {
+            for( toml_value_t** iter=v->arr; *iter!=NULL; iter++ ) {
                 toml_value_dump( *iter );
-                if( *( iter+1 )!=NULL )
-                {
+                if( *( iter+1 )!=NULL ) {
                     printf( ",\n" );
                 }
             }
             printf("\n]");
             break;
         }
-        case TOML_INLINETABLE:
-        {
+        case TOML_INLINETABLE: {
             printf( "{\n" );
             toml_key_t* k = ( toml_key_t* )( v->data );
             int total = kh_size( k->subkeys );
-            for( khiter_t ki=kh_begin( k->subkeys ); ki!=kh_end( k->subkeys ); ++ki )
-            {
-                if( kh_exist( k->subkeys, ki ) )
-                {
+            for( khiter_t ki=kh_begin( k->subkeys );
+                 ki!=kh_end( k->subkeys );
+                 ++ki ) {
+                if( kh_exist( k->subkeys, ki ) ) {
                     toml_key_dump( kh_value( k->subkeys, ki ) );
-                    if( --total>0 )
-                    {
+                    if( --total>0 ) {
                         printf( ",\n" );
                     }
                 }
@@ -325,17 +297,16 @@ void toml_value_dump( toml_value_t* v )
     }
 }
 
-void toml_json_dump( toml_key_t* root )
-{
+void
+toml_json_dump( toml_key_t* root ) {
     printf( "{\n" );
     int total = kh_size( root->subkeys );
-    for( khiter_t ki=kh_begin( root->subkeys ); ki!=kh_end( root->subkeys ); ki++ )
-    {
-        if( kh_exist( root->subkeys, ki ) )
-        {
+    for( khiter_t ki=kh_begin( root->subkeys );
+         ki!=kh_end( root->subkeys );
+         ki++ ) {
+        if( kh_exist( root->subkeys, ki ) ) {
             toml_key_dump( kh_value( root->subkeys, ki ) );
-            if( --total>0 )
-            {
+            if( --total>0 ) {
                 printf( ",\n" );
             }
         }
@@ -343,7 +314,7 @@ void toml_json_dump( toml_key_t* root )
     printf( "\n}\n" );
 }
 
-void toml_free( toml_key_t* toml )
-{
+void
+toml_free( toml_key_t* toml ) {
     delete_key( toml );
 }

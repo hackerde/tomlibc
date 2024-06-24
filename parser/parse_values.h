@@ -10,11 +10,11 @@
     which is mostly needed for compliance testing.
 */
 typedef struct number number_t;
-struct number
-{
-    toml_value_type_t   type;
-    int                 precision;
-    bool                scientific;
+struct
+number {
+    toml_value_type_t type;
+    int               precision;
+    bool              scientific;
 };
 
 /*
@@ -24,12 +24,12 @@ struct number
     the matching format, again for compliance testing.
 */
 typedef struct datetime datetime_t;
-struct datetime
-{
-    struct tm*          dt;
-    toml_value_type_t   type;
-    char                format[ TOML_MAX_DATE_FORMAT ];
-    int                 millis;
+struct
+datetime {
+    struct tm*        dt;
+    toml_value_type_t type;
+    char              format[ TOML_MAX_DATE_FORMAT ];
+    int               millis;
 };
 
 /*
@@ -44,64 +44,82 @@ struct datetime
     was parsed and `parse_newline` returns true if a newline
     was successfully parsed.
 */
-bool        parse_comment       ( tokenizer_t* tok );
-void        parse_whitespace    ( tokenizer_t* tok );
-bool        parse_newline       ( tokenizer_t* tok );
-double      parse_boolean       ( tokenizer_t* tok );
-toml_key_t* parse_inlinetable   ( tokenizer_t* tok );
+bool
+parse_comment    ( tokenizer_t* tok );
 
-int parse_escape(
-    tokenizer_t*    tok,
-    char*           escaped,
-    int             len
+void
+parse_whitespace ( tokenizer_t* tok );
+
+bool
+parse_newline    ( tokenizer_t* tok );
+
+double
+parse_boolean    ( tokenizer_t* tok );
+
+toml_key_t*
+parse_inlinetable( tokenizer_t* tok );
+
+int
+parse_escape(
+    tokenizer_t* tok,
+    char*        escaped,
+    int          len
 );
 
-int parse_unicode(
-    tokenizer_t*    tok,
-    char*           escaped,
-    int             len
+int
+parse_unicode(
+    tokenizer_t* tok,
+    char*        escaped,
+    int          len
 );
 
-char* parse_basicstring(
-    tokenizer_t*    tok,
-    char*           value,
-    bool            multi
+char*
+parse_basicstring(
+    tokenizer_t* tok,
+    char*        value,
+    bool         multi
 );
 
-char* parse_literalstring(
-    tokenizer_t*    tok,
-    char*           value,
-    bool            multi
+char*
+parse_literalstring(
+    tokenizer_t* tok,
+    char*        value,
+    bool         multi
 );
 
-double parse_inf_nan(
-    tokenizer_t*    tok,
-    bool            negative
+double
+parse_inf_nan(
+    tokenizer_t* tok,
+    bool         negative
 );
 
-double parse_base_uint(
-    tokenizer_t*    tok,
-    int             base,
-    char*           value,
-    const char*     num_end
+double
+parse_base_uint(
+    tokenizer_t* tok,
+    int          base,
+    char*        value,
+    const char*  num_end
 );
 
-number_t* parse_number(
-    tokenizer_t*    tok,
-    char*           value,
-    double*         d,
-    const char*     num_end
+number_t*
+parse_number(
+    tokenizer_t* tok,
+    char*        value,
+    double*      d,
+    const char*  num_end
 );
 
-datetime_t* parse_datetime(
-    tokenizer_t*    tok,
-    char*           value,
-    const char*     num_end
+datetime_t*
+parse_datetime(
+    tokenizer_t* tok,
+    char*        value,
+    const char*  num_end
 );
 
-toml_value_t* parse_array(
-    tokenizer_t*    tok,
-    toml_value_t*   arr
+toml_value_t*
+parse_array(
+    tokenizer_t*  tok,
+    toml_value_t* arr
 );
 
 /*
@@ -115,9 +133,10 @@ toml_value_t* parse_array(
     allows it to be used anywhere a value needs to be
     parsed.
 */
-toml_value_t* parse_value(
-    tokenizer_t*    tok,
-    const char*     num_end
+toml_value_t*
+parse_value(
+    tokenizer_t* tok,
+    const char*  num_end
 );
 
 #endif
