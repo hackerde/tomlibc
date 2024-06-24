@@ -18,21 +18,24 @@
     argument determines which character marks the termination
     of parsing.
 */
-toml_key_t* parse_barekey(
+toml_key_t*
+parse_barekey(
     tokenizer_t*    tok,
     char            end,
     toml_key_type_t branch,
     toml_key_type_t leaf
 );
 
-toml_key_t* parse_basicquotedkey(
+toml_key_t*
+parse_basicquotedkey(
     tokenizer_t*    tok,
     char            end,
     toml_key_type_t branch,
     toml_key_type_t leaf
 );
 
-toml_key_t* parse_literalquotedkey(
+toml_key_t*
+parse_literalquotedkey(
     tokenizer_t*    tok,
     char            end,
     toml_key_type_t branch,
@@ -50,22 +53,25 @@ toml_key_t* parse_literalquotedkey(
     a delimiter like `.` or `=`. Returns NULL on
     parsing failure.
 */
-toml_key_t* parse_key(
-    tokenizer_t*    tok,
-    toml_key_t*     key,
-    bool            expecting
+toml_key_t*
+parse_key(
+    tokenizer_t* tok,
+    toml_key_t*  key,
+    bool         expecting
 );
 
-toml_key_t* parse_table(
-    tokenizer_t*    tok,
-    toml_key_t*     key,
-    bool            expecting
+toml_key_t*
+parse_table(
+    tokenizer_t* tok,
+    toml_key_t*  key,
+    bool         expecting
 );
 
-toml_key_t* parse_arraytable(
-    tokenizer_t*    tok,
-    toml_key_t*     key,
-    bool            expecting
+toml_key_t*
+parse_arraytable(
+    tokenizer_t* tok,
+    toml_key_t*  key,
+    bool         expecting
 );
 
 /*
@@ -81,10 +87,11 @@ toml_key_t* parse_arraytable(
     pointer to the last table or arraytable it parsed
     and returns `key` if neither.
 */
-toml_key_t* parse_keyval(
-    tokenizer_t*    tok,
-    toml_key_t*     key,
-    toml_key_t*     root
+toml_key_t*
+parse_keyval(
+    tokenizer_t* tok,
+    toml_key_t*  key,
+    toml_key_t*  root
 );
 
 #endif

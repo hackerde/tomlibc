@@ -11,22 +11,29 @@
     returns a pointer to the `root` key and NULL on
     failure.
 */
-toml_key_t* toml_load   ( char* file );
+toml_key_t*
+toml_load( char* file );
 
 /*
     Function `toml_key_dump`, `toml_value_dump` and
     `toml_json_dump` are functions to print out the
     TOML data in a JSON format for compliance testing.
 */
-void toml_key_dump      ( toml_key_t* k );
-void toml_value_dump    ( toml_value_t* v );
-void toml_json_dump     ( toml_key_t* root );
+void
+toml_key_dump  ( toml_key_t* k    );
+
+void
+toml_value_dump( toml_value_t* v  );
+
+void
+toml_json_dump ( toml_key_t* root );
 
 /*
     Function `toml_free` de-allocates all the memory
     used up by the TOML data structures.
 */
-void toml_free          ( toml_key_t* toml );
+void
+toml_free( toml_key_t* toml );
 
 /*
     ==CALLBACKS==
@@ -38,16 +45,28 @@ void toml_free          ( toml_key_t* toml );
     It returns a pointer to the first match; if nothing
     matches, it returns NULL.
 */
-toml_key_t* toml_get_key(
+toml_key_t*
+toml_get_key(
     toml_key_t* key,
     const char* id
 );
 
-char*           toml_get_string     ( toml_key_t* key );
-int*            toml_get_int        ( toml_key_t* key );
-double*         toml_get_float      ( toml_key_t* key );
-bool*           toml_get_bool       ( toml_key_t* key );
-struct tm*      toml_get_datetime   ( toml_key_t* key );
-toml_value_t*   toml_get_array      ( toml_key_t* key );
+char*
+toml_get_string  ( toml_key_t* key );
+
+int*
+toml_get_int     ( toml_key_t* key );
+
+double*
+toml_get_float   ( toml_key_t* key );
+
+bool*
+toml_get_bool    ( toml_key_t* key );
+
+struct tm*
+toml_get_datetime( toml_key_t* key );
+
+toml_value_t*
+toml_get_array   ( toml_key_t* key );
 
 #endif

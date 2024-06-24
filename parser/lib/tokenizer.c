@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-tokenizer_t* new_tokenizer( char* input )
-{
+tokenizer_t*
+new_tokenizer( char* input ) {
     tokenizer_t* tok    = calloc( 1, sizeof( tokenizer_t ) );
     tok->input          = input;
     tok->cursor         = 0;
@@ -19,40 +19,33 @@ tokenizer_t* new_tokenizer( char* input )
     return tok;
 }
 
-int next_token( tokenizer_t* tok )
-{
+int
+next_token( tokenizer_t* tok ) {
     tok->prev_prev  = tok->prev;
     tok->prev       = tok->token;
-    if( tok->has_token || tok->cursor==0 )
-    {
+    if( tok->has_token || tok->cursor==0 ) {
         tok->token      = tok->stream[ tok->cursor++ ];
         // if we parsed some non-whitespace character since we saw
         // the newline, then we aren't on a newline anymore
         if( tok->newline && tok->prev && tok->prev!=' ' &&
             tok->prev!='\t' && tok->prev!='\n'
-        )
-        {
+        ) {
             tok->newline = false;
         }
-        if( tok->token=='\n' )
-        {
+        if( tok->token=='\n' ) {
             tok->newline = true;
         }
-        if( tok->prev=='\n' )
-        {
-            if( tok->line<MAX_NUM_LINES )
-            {
+        if( tok->prev=='\n' ) {
+            if( tok->line<MAX_NUM_LINES ) {
                 tok->lines[ tok->line ] = tok->col;
             }
             tok->line++;
             tok->col        = 0;
         }
-        else
-        {
+        else {
             tok->col++;
         }
-        if( tok->token==EOF )
-        {
+        if( tok->token==EOF ) {
             tok->token      = '\0';
             tok->has_token  = false;
         }
@@ -61,62 +54,54 @@ int next_token( tokenizer_t* tok )
     return 0;
 }
 
-void backtrack(
+void
+backtrack(
     tokenizer_t*    tok,
     int             count
-)
-{
+) {
     int pre_count           = count+2;
-    if( count>0 && tok->cursor>pre_count )
-    {
+    if( count>0 && tok->cursor>pre_count ) {
         tok->cursor         -= pre_count;
         tok->has_token      = true;
         int col             = tok->col;
-        while( tok->line>=0 && pre_count>col )
-        {
+        while( tok->line>=0 && pre_count>col ) {
             pre_count       -= col;
             col             = tok->lines[ --tok->line ];
         }
         tok->col            = col-pre_count;
         if( tok->line<0 )   tok->line = 0;
-        if( tok->col<0 )    tok->col  = 0;
+        if( tok->col<0  )   tok->col  = 0;
         next_token( tok );
         next_token( tok );
     }
-    else
-    {
+    else {
         LOG_ERR( "not enough characters to backtrack %d\n", count );
     }
 }
 
-bool load_input( tokenizer_t* tok )
-{
+bool
+load_input( tokenizer_t* tok ) {
     #define MAX_FILE_SIZE 1073741824
     FILE* stream;
-    if( tok->input )
-    {
-        stream      = fopen( tok->input, "r" );
+    if( tok->input ) {
+        stream = fopen( tok->input, "r" );
     }
-    else
-    {
-        stream      = stdin;
+    else {
+        stream = stdin;
     }
-    if( !stream )
-    {
+    if( !stream ) {
         LOG_ERR( "could not open input stream\n" );
         return false;
     }
     fseek( stream, 0L, SEEK_END );
-    long size       = ftell( stream );
+    long   size = ftell( stream );
     fseek( stream, 0L, SEEK_SET );
-    if( size>=MAX_FILE_SIZE )
-    {
+    if( size>=MAX_FILE_SIZE ) {
         LOG_ERR( "input size is too big\n" );
         return false;
     }
     char* buffer    = calloc( 1, size+1 );
-    if( size>0 && 1!=fread( buffer, size, 1, stream ) )
-    {
+    if( size>0 && 1!=fread( buffer, size, 1, stream ) ) {
         LOG_ERR( "could not read input\n" );
         return false;
     }
@@ -126,28 +111,28 @@ bool load_input( tokenizer_t* tok )
     return true;
 }
 
-bool has_token( tokenizer_t* tok )
-{
+bool
+has_token( tokenizer_t* tok ) {
     return tok->has_token;
 }
 
-char get_token( tokenizer_t* tok )
-{
+char
+get_token( tokenizer_t* tok ) {
     return tok->token;
 }
 
-char get_prev( tokenizer_t* tok )
-{
+char
+get_prev( tokenizer_t* tok ) {
     return tok->prev;
 }
 
-char get_prev_prev( tokenizer_t* tok )
-{
+char
+get_prev_prev( tokenizer_t* tok ) {
     return tok->prev_prev;
 }
 
-void delete_tokenizer( tokenizer_t* tok )
-{
+void
+delete_tokenizer( tokenizer_t* tok ) {
     free( tok->stream );
     free( tok );
 }

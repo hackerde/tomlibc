@@ -18,8 +18,8 @@
     to the various types defined in the TOML Spec.
 */
 typedef enum toml_value_type toml_value_type_t;
-enum toml_value_type
-{
+enum
+toml_value_type {
     TOML_STRING,
     TOML_INT,
     TOML_FLOAT,
@@ -37,8 +37,8 @@ enum toml_value_type
     associated with a TOML value.
 */
 typedef struct toml_value toml_value_t;
-struct toml_value
-{
+struct
+toml_value {
     /* the type of TOML value */
     toml_value_type_t   type;
     /* used for storing `ARRAY` type values */
@@ -59,8 +59,8 @@ struct toml_value
     to make re-defining validity decisions.
 */
 typedef enum toml_key_type toml_key_type_t;
-enum toml_key_type
-{
+enum
+toml_key_type {
     /* `[a.b]` -> a */
     TOML_TABLE,
     /* `j.k = v` -> j */
@@ -80,8 +80,8 @@ enum toml_key_type
 */
 typedef struct toml_key toml_key_t;
 KHASH_MAP_INIT_STR( str, toml_key_t* )
-struct toml_key
-{
+struct
+toml_key {
     /* key type as described above */
     toml_key_type_t type;
     /* identifier */

@@ -18,7 +18,8 @@
     TODO: Refactor to parse tokens instead of characters
 */
 typedef struct tokenizer tokenizer_t;
-struct tokenizer {
+struct
+tokenizer {
     /* the input filename */
     char*   input;
     /* pointer for storing the input buffer */
@@ -49,7 +50,8 @@ struct tokenizer {
     the various attributes and returns a pointer to the
     newly allocated memory region.
 */
-tokenizer_t* new_tokenizer     ( char* filename );
+tokenizer_t*
+new_tokenizer( char* filename );
 
 /*
     Function `load_input` loads the data from an the input
@@ -57,7 +59,8 @@ tokenizer_t* new_tokenizer     ( char* filename );
     that the input is not too large. Upon any error, it
     returns false and returns true if everything succeeds.
 */
-bool   load_input              ( tokenizer_t* tok );
+bool
+load_input( tokenizer_t* tok );
 
 /*
     Function `next_token` reads the next character from the
@@ -68,7 +71,8 @@ bool   load_input              ( tokenizer_t* tok );
     a token, i.e. we have not reached EOF, returns 1, else
     returns 0.
 */
-int     next_token             ( tokenizer_t* tok );
+int
+next_token( tokenizer_t* tok );
 
 /*
     Function `backtrack` is used to move the `cursor` back in
@@ -83,14 +87,19 @@ int     next_token             ( tokenizer_t* tok );
     back 2 extra characters and calls `next_token` twice to
     re-populate them.
 */
-void    backtrack              ( tokenizer_t* tok, int count );
+void
+backtrack(
+    tokenizer_t* tok,
+    int count
+);
 
 /*
     Function `has_token` returns true if the boolean attribute
     is set to true. This should be used callers to query if
     the tokenizer has a non-EOF token waiting to be parsed.
 */
-bool    has_token              ( tokenizer_t* tok );
+bool
+has_token( tokenizer_t* tok );
 
 /*
     Functions `get_token`, `get_prev` and `get_prev_prev`
@@ -99,10 +108,16 @@ bool    has_token              ( tokenizer_t* tok );
     used by callers to access the tokens read in by the
     tokenizer.
 */
-char    get_token              ( tokenizer_t* tok );
-char    get_prev               ( tokenizer_t* tok );
-char    get_prev_prev          ( tokenizer_t* tok );
+char
+get_token       ( tokenizer_t* tok );
 
-void    delete_tokenizer       ( tokenizer_t* tok );
+char
+get_prev        ( tokenizer_t* tok );
+
+char
+get_prev_prev   ( tokenizer_t* tok );
+
+void
+delete_tokenizer( tokenizer_t* tok );
 
 #endif
