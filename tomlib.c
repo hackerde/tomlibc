@@ -21,12 +21,17 @@ toml_load( char* file ) {
     RETURN_IF_FAILED( ok, "Failed to load input from %s\n", file );
     next_token( tok );
 
+    int line, col;
     toml_key_t* key = root;
     while( has_token( tok )!=0 ) {
-        key = parse_keyval( tok, key, root );
+        key  = parse_keyval( tok, key, root );
+        line = tok->line;
+        col  = tok->col;
+        FUNC_IF_FAILED(   key, delete_tokenizer, tok );
+        FUNC_IF_FAILED(   key, toml_free, root );
         RETURN_IF_FAILED( key, "Encountered an error while parsing %s\n"
                           "At line %d column %d\n",
-                          file, tok->line+1, tok->col );
+                          file, line+1, col );
     }
 
     delete_tokenizer( tok );
