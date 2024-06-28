@@ -1,6 +1,3 @@
-> [!WARNING]  
-> This project is still a work in progress.
-
 # tomlibc
 
 TOML parser written in C.
@@ -59,7 +56,7 @@ double* pi      = v->arr[ 2 ]->data;
 ```
 
 TOML Datetime objects are stored in `struct tm` as defined in `<time.h>`.
-Since that struct does not support millisecond precision, that can be found in `v->precision`.
+Since that struct does not support millisecond precision, those can be found in `v->precision`.
 
 ## Tests
 
@@ -74,7 +71,8 @@ $ ./tests/run_toml_tests.sh    # this runs the toml-test suite tests
 ### Current Status
 
 > [!NOTE]
-> This has only been tested on macOS Sonoma Version 14.2.1 with clang 15.0.0
+> This has only been tested on x86_64-apple-darwin23.4.0 with Apple clang 15.0.0.
+> Any updates needed for supporting Linux and Windows (with gcc) will be added soon.
 
 **tomlibc**
 
@@ -95,3 +93,4 @@ Running toml-test tests
 ```
 
 The failing tests involve leading zeros, `+` or `-` signs with zeros, invalid or null unicode characters, etc.
+They represent issues regarding the JSON output format requirement and should not hinder functionality.
