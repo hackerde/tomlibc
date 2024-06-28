@@ -161,7 +161,8 @@ datetime_t*
 parse_datetime(
     tokenizer_t* tok,
     char*        value,
-    const char*  num_end
+    const char*  num_end,
+    struct tm*   time
 ) {
     datetime_t* dt     = NULL;
     int         idx    = 0;
@@ -172,7 +173,6 @@ parse_datetime(
         if( ( is_whitespace( get_token( tok ) ) && spaces ) ||
             ( !is_whitespace( get_token( tok ) ) && is_numberend( get_token( tok ), num_end ) )
           ) {
-            struct tm* time   = calloc( 1, sizeof( struct tm ) );
             int  millis       =   0  ;
             char year   [ 5 ] = { 0 };
             char mon    [ 3 ] = { 0 };
@@ -186,9 +186,9 @@ parse_datetime(
             char off_h  [ 3 ] = { 0 };
             char off_m  [ 3 ] = { 0 };
 
-            char*           end;
-            unsigned long   num;
-            int             t;
+            char*         end;
+            unsigned long num;
+            int           t;
             #define CHECK_DATETIME( var, len, ... )                         \
                 do {                                                        \
                     RETURN_IF_FAILED( strlen( var )==len, __VA_ARGS__ );    \
@@ -256,6 +256,7 @@ parse_datetime(
                 mlen       = ( mlen>3 ) ? mlen : 3;
                 dt->millis = millis;
                 int sz     = strlen( "%Y-%m-%dT%H:%M:%S.-HH:MM" )+mlen+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c      = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%d%c%s:%s",
                                         millis, off_s[ 0 ], off_h, off_m );
@@ -295,6 +296,7 @@ parse_datetime(
                 dt->type = TOML_DATETIME;
                 dt->dt   = time;
                 int sz   = strlen( "%Y-%m-%dT%H:%M:%S-HH:MM" )+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c    = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S%c%s:%s",
                                      off_s[ 0 ], off_h, off_m );
@@ -332,6 +334,7 @@ parse_datetime(
                 mlen       = ( mlen>3 ) ? mlen : 3;
                 dt->millis = millis;
                 int sz     = strlen( "%Y-%m-%dT%H:%M:%S.Z" )+mlen+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c      = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%dZ", millis );
                 return dt;
@@ -364,6 +367,7 @@ parse_datetime(
                 mlen       = ( mlen>3 ) ? mlen : 3;
                 dt->millis = millis;
                 int sz     = strlen( "%Y-%m-%dT%H:%M:%S." )+mlen+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c      = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%S.%d", millis );
                 return dt;
@@ -398,6 +402,7 @@ parse_datetime(
                 dt->type = TOML_DATETIME;
                 dt->dt   = time;
                 int sz   = strlen( "%Y-%m-%dT%H:%M:%SZ" )+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c    = snprintf( dt->format, sz, "%%Y-%%m-%%dT%%H:%%M:%%SZ" );
                 return dt;
@@ -424,6 +429,7 @@ parse_datetime(
                 dt->type = TOML_DATETIMELOCAL;
                 dt->dt   = time;
                 int sz   = strlen( "%Y-%m-%dT%H:%M:%S" );
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 memcpy( dt->format, "%Y-%m-%dT%H:%M:%S", sz );
                 return dt;
@@ -442,6 +448,7 @@ parse_datetime(
                 dt->type = TOML_DATELOCAL;
                 dt->dt   = time;
                 int sz   = strlen( "%Y-%m-%d" );
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 memcpy( dt->format, "%Y-%m-%d", sz );
                 return dt;
@@ -469,6 +476,7 @@ parse_datetime(
                 mlen       = ( mlen>3 ) ? mlen : 3;
                 dt->millis = millis;
                 int sz     = strlen( "%H:%M:%S." )+mlen+1;
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 int c      = snprintf( dt->format, sz, "%%H:%%M:%%S.%d", millis );
                 return dt;
@@ -490,6 +498,7 @@ parse_datetime(
                 dt->type = TOML_TIMELOCAL;
                 dt->dt   = time;
                 int sz   = strlen( "%H:%M:%S" );
+                FUNC_IF_FAILED(   sz<TOML_MAX_DATE_FORMAT, free, dt );
                 RETURN_IF_FAILED( sz<TOML_MAX_DATE_FORMAT, "datetime string is too long" );
                 memcpy( dt->format, "%H:%M:%S", sz );
                 return dt;
@@ -626,11 +635,13 @@ parse_inlinetable( tokenizer_t* tok ) {
     bool        first = true;
     while( has_token( tok ) ) {
         if( is_inlinetableend( get_token( tok ) ) ) {
+            FUNC_IF_FAILED(   ( !sep || first ), delete_key, keys );
             RETURN_IF_FAILED( ( !sep || first ), "cannot have trailing comma in inline table\n" );
             next_token( tok );
             return keys;
         }
         else if( is_inlinetablesep( get_token( tok ) ) ) {
+            FUNC_IF_FAILED(   !sep, delete_key, keys );
             RETURN_IF_FAILED( !sep, "expected key-value but got , instead" );
             sep = true;
             next_token( tok );
@@ -643,11 +654,14 @@ parse_inlinetable( tokenizer_t* tok ) {
             parse_whitespace( tok );
         }
         else {
+            FUNC_IF_FAILED(   sep, delete_key, keys );
             RETURN_IF_FAILED( sep, "expected , between elements\n" );
-            toml_key_t*     k = parse_key( tok, keys, true );
-            RETURN_IF_FAILED( k, "failed to parse key\n" );
-            toml_value_t*   v = parse_value( tok, ", }" );
-            RETURN_IF_FAILED( v, "failed to parse value\n" );
+            toml_key_t*       k = parse_key( tok, keys, true );
+            FUNC_IF_FAILED(   k,  delete_key, keys );
+            RETURN_IF_FAILED( k,  "failed to parse key\n" );
+            toml_value_t*     v = parse_value( tok, ", }" );
+            FUNC_IF_FAILED(   v,  delete_key, keys );
+            RETURN_IF_FAILED( v,  "failed to parse value\n" );
             // refer to inline table comment in `keys.c`
             if( v->type==TOML_INLINETABLE ) {
                 toml_key_t* h = ( toml_key_t * )( v->data );
@@ -657,6 +671,7 @@ parse_inlinetable( tokenizer_t* tok ) {
                      ++ki ) {
                     if( kh_exist( h->subkeys, ki ) ) {
                         toml_key_t* e = add_subkey( k, kh_value( h->subkeys, ki ) );
+                        FUNC_IF_FAILED(   e,  delete_key, keys );
                         RETURN_IF_FAILED( e, "could not add inline table key %s\n", kh_value( h->subkeys, ki )->id );
                     }
                 }
@@ -916,10 +931,10 @@ parse_number(
     tokenizer_t* tok,
     char*        value,
     double*      d,
-    const char*  num_end
+    const char*  num_end,
+    number_t*    n
 ) {
     int         idx = 0;
-    number_t*   n   = calloc( 1, sizeof( number_t ) );
     n->type         = TOML_INT;
     n->scientific   = false;
     n->precision    = 0;
@@ -1096,11 +1111,13 @@ parse_value(
             bool b = next_token( tok );
             if( has_token( tok ) && get_token( tok )==':' ) {
                 backtrack( tok, a+b );
-                datetime_t* dt  = parse_datetime( tok, value, num_end );
+                struct tm* time = calloc( 1, sizeof( struct tm ) );
+                datetime_t* dt  = parse_datetime( tok, value, num_end, time );
+                FUNC_IF_FAILED(   dt, free, time );
                 RETURN_IF_FAILED( dt, "could not parse time\n" );
                 toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
-                free( dt->dt );
                 free( dt );
+                free( time );
                 return v;
             }
             else if( !is_digit( get_prev( tok ) ) || !is_digit( get_token( tok ) ) ) {
@@ -1111,19 +1128,24 @@ parse_value(
                 bool d = next_token( tok );
                 if( has_token( tok ) && get_token( tok )=='-' ) {
                     backtrack( tok, a+b+c+d );
-                    datetime_t* dt  = parse_datetime( tok, value, num_end );
+                    struct tm* time = calloc( 1, sizeof( struct tm ) );
+                    datetime_t* dt  = parse_datetime( tok, value, num_end, time );
+                    FUNC_IF_FAILED(   dt, free, time );
                     RETURN_IF_FAILED( dt, "could not parse datetime\n" );
                     toml_value_t* v = new_datetime( dt->dt, dt->type, dt->format, dt->millis );
-                    free( dt->dt );
                     free( dt );
+                    free( time );
                     return v;
                 }
                 else {
                     backtrack( tok, a+b+c+d );
                 }
             }
-            double* d       = calloc( 1, sizeof( double ) );
-            number_t* n     = parse_number( tok, value, d, num_end );
+            double*   d   = calloc( 1, sizeof( double ) );
+            number_t* num = calloc( 1, sizeof( number_t ) );
+            number_t* n   = parse_number( tok, value, d, num_end, num );
+            FUNC_IF_FAILED(   n, free, d );
+            FUNC_IF_FAILED(   n, free, n );
             RETURN_IF_FAILED( n, "could not parse number\n" );
             toml_value_t* v = new_number( d, n->type, n->precision, n->scientific );
             free( d );
@@ -1133,9 +1155,10 @@ parse_value(
         else if( is_arraystart( get_token( tok ) ) ) {
             toml_value_t* v = new_array();
             next_token( tok );
-            v = parse_array( tok, v );
-            RETURN_IF_FAILED( v, "could not parse array\n" );
-            return v;
+            toml_value_t* val = parse_array( tok, v );
+            FUNC_IF_FAILED(   val, delete_value, v  );
+            RETURN_IF_FAILED( val, "could not parse array\n" );
+            return val;
         }
         else if( is_inlinetablestart( get_token( tok ) ) ) {
             next_token( tok );

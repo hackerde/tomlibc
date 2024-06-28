@@ -106,14 +106,16 @@ parse_number(
     tokenizer_t* tok,
     char*        value,
     double*      d,
-    const char*  num_end
+    const char*  num_end,
+    number_t*    n
 );
 
 datetime_t*
 parse_datetime(
     tokenizer_t* tok,
     char*        value,
-    const char*  num_end
+    const char*  num_end,
+    struct tm*   time
 );
 
 toml_value_t*
